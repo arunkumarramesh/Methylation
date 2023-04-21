@@ -38,9 +38,8 @@ cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna
 ulimit -n 10000
 for file in *_1.paired.fq.gz; do /data/proj2/popgen/a.ramesh/software/STAR-2.7.10b/source/STAR --runMode alignReads --genomeDir /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/STARindex/ --readFilesIn $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} --readFilesCommand zcat --outFileNamePrefix ${file/_1.paired.fq.gz//}  --outReadsUnmapped Fastx --outSAMtype BAM SortedByCoordinate --twopassMode Basic --runThreadN 20  ; done
 
-## not sure about these two, check carefully again
-find . -type f -name "*txt" -printf "/%P\n" | while read FILE ; do DIR=$(dirname "$FILE" ); mv ."$FILE" ."$DIR""$DIR".sort.bam;done
-find . -name '.sort.bam' -exec mv {} . \;
+find . -type f -name "Aligned.sortedByCoord.out.bam" -printf "/%P\n" | while read FILE ; do DIR=$(dirname "$FILE" ); mv ."$FILE" ."$DIR""$DIR".sort.bam;done
+find . -name '*.sort.bam' -exec mv {} . \;
 
 ```
 
