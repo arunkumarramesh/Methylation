@@ -372,7 +372,7 @@ cat rice_snps_filtered.recode.vcf | grep '##' > vcfheader
 cat vcfheader lyrata_meth.vcf >lyrata_meth_all.vcf
 cat vcfheader rice_meth_var_invar.vcf >rice_meth_var_invar_all.vcf
 ```
-19. Get methylation vcf file compatable for multihetsep
+20. Get methylation vcf file compatable for multihetsep
 ```
 setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 
@@ -405,7 +405,7 @@ meta[which(apply(meta[10:ncol(meta)], 1, function(r) all(r %in% c("0/0")))),]$AL
 
 write.table(meta,file="rice_meth_SMCm.vcf",quote = F, row.names = F,sep="\t")
 ```
-20. Generate multihetsep file for SMCm for SMPs. Do for indica1 and indica2
+21. Generate multihetsep file for SMCm for SMPs. Do for indica1 and indica2
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
 
@@ -428,7 +428,7 @@ cat chrlist2 | while read line; do /data/proj2/popgen/a.ramesh/software/msmc-too
 cat chrlist2 | while read line; do /data/proj2/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C148.$line.snps.recode.vcf.gz W161.$line.snps.recode.vcf.gz W169.$line.snps.recode.vcf.gz MH63.$line.snps.recode.vcf.gz >indica2_multihetsep_meth_$line  ; done
 
 ```
-21. Generate multihetsep file for SMCm for SNPs. Do for indica1 and indica2
+22. Generate multihetsep file for SMCm for SNPs. Do for indica1 and indica2
 
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
@@ -444,7 +444,7 @@ cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/gen
 cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C148.$line.snps.recode.vcf.gz W161.$line.snps.recode.vcf.gz W169.$line.snps.recode.vcf.gz MH63.$line.snps.recode.vcf.gz >indica2_multihetsep_$line  ; done
 ```
 
-22. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
+23. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
 vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  gene_pos.bed
