@@ -69,8 +69,8 @@ for file in *_1.fastq.gz; do java -jar /proj/popgen/a.ramesh/software/Trimmomati
 
 5. Map methylation reads
 ```
-sed 's/^/\/proj\/popgen\/a.ramesh\/projects\/methylomes\/arabidopsis\/pseudogenomes\//' samplenames | paste samplenames5 >samplenames6
-sed 's/^/\/proj\/popgen\/a.ramesh\/projects\/methylomes\/arabidopsis\/pseudogenomes\//' samplenames | paste samplenames2 >samplenames3
+sed 's/^/\/proj\/popgen\/a.ramesh\/projects\/methylomes\/arabidopsis\/pseudogenomes\//' samplenames5 | paste samplenames5 >samplenames6
+sed 's/^/\/proj\/popgen\/a.ramesh\/projects\/methylomes\/arabidopsis\/pseudogenomes\//' samplenames2 | paste samplenames2 >samplenames3
 
 cd /proj/popgen/a.ramesh/projects/methylomes/arabidopsis/data
 cat samplenames6 |  while read -r value1 value2 remainder ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark --multicore 4 --hisat2 --path_to_hisat2 /proj/popgen/a.ramesh/software/hisat2-2.2.1/  --genome_folder $value2 $value1.trim.fq.gz  ; done
