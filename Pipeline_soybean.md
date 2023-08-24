@@ -92,7 +92,7 @@ SLURM
 gatk CombineGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna --variant ACC-001.g.vcf.gz --variant ACC-051.g.vcf.gz --variant ACC-076.g.vcf.gz --variant ACC-082.g.vcf.gz --variant ACC-089.g.vcf.gz --variant ACC-100.g.vcf.gz --variant ACC-103.g.vcf.gz --variant ACC-108.g.vcf.gz --variant ACC-1279.g.vcf.gz --variant ACC-128.g.vcf.gz --variant ACC-1297.g.vcf.gz --variant ACC-130.g.vcf.gz --variant ACC-1379.g.vcf.gz --variant ACC-1399.g.vcf.gz --variant ACC-1412.g.vcf.gz --variant ACC-1433.g.vcf.gz --variant ACC-171.g.vcf.gz --variant ACC-172.g.vcf.gz --variant ACC-176.g.vcf.gz --variant ACC-1843.g.vcf.gz --variant ACC-1942.g.vcf.gz --variant ACC-212.g.vcf.gz --variant ACC-215.g.vcf.gz --variant ACC-2210.g.vcf.gz --variant ACC-2218.g.vcf.gz --variant ACC-2219.g.vcf.gz --variant ACC-2225.g.vcf.gz --variant ACC-2226.g.vcf.gz --variant ACC-2227.g.vcf.gz --variant ACC-2228.g.vcf.gz --variant ACC-2229.g.vcf.gz --variant ACC-2230.g.vcf.gz --variant ACC-244.g.vcf.gz --variant ACC-248.g.vcf.gz --variant ACC-250.g.vcf.gz --variant ACC-253.g.vcf.gz --variant ACC-262.g.vcf.gz --variant ACC-281.g.vcf.gz --variant ACC-319.g.vcf.gz --variant ACC-433.g.vcf.gz --variant ACC-438.g.vcf.gz --variant ACC-504.g.vcf.gz --variant ACC-546.g.vcf.gz --variant ACC-616.g.vcf.gz -O soybean.cohort.g.vcf.gz
 ```
 
-8. genotype samples
+8. genotype samples, select SNP variants and invariant sites
 ```
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna -V soybean.cohort.g.vcf.gz -O soybean.output.vcf.gz
 
@@ -100,7 +100,7 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projec
 genotypegvcf.sh (END)
 ```
 
-8. select SNP variants and invariant sites
+9. select SNP variants and invariant sites
 ```
 gatk SelectVariants -V soybean.output.vcf.gz -select-type SNP -O soybean.snps.vcf.gz
 vcftools --gzvcf soybean.snps.vcf.gz --out soybean_snps_filtered --recode --recode-INFO-all --minDP 20 --minGQ 30  --minQ 30
@@ -109,14 +109,14 @@ gatk SelectVariants -V soybean.var_invar.vcf.gz -select-type NO_VARIATION -O soy
 vcftools --gzvcf soybean.invar.vcf.gz --out soybean.invar --recode --recode-INFO-all --minDP 20  --minQ 30 --max-missing 0.5 --bed /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 ```
 
-9. substitute SNPs into ref genome to create sample specific ref genomes
+10. substitute SNPs into ref genome to create sample specific ref genomes
 ```
 bgzip soybean_snps_filtered.recode.vcf
 tabix soybean_snps_filtered.recode.vcf.gz
 cat sample_chr | while read -r value1 value2 remainder ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna $value2 | bcftools consensus -M N -s $value1 -p ${value1/$/_} -H 1pIu soybean_snps_filtered.recode.vcf.gz >>${value2/$/_soybean.fa}; done
 ```
 
-10. index each new ref genome and move into seperate folders
+11. index each new ref genome and move into seperate folders
 ```
 cat chrlist | while read line; do /data/proj2/popgen/a.ramesh/software/faSplit byname $line ${line/^/chr_} ; done
 cat samplenames | while read line ; do cat $line*.fa >$line.merged.fa  ; done
@@ -128,29 +128,29 @@ cat samplenames | while read line ; do mv $line.merged.dict $line  ; done
 cat samplenames | while read line ; do mv $line.merged.fa.fai $line  ; done
 ```
 
-11. index genome using bismark for methylation mapping
+12. index genome using bismark for methylation mapping
 ```
 /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark_genome_preparation --hisat2 --verbose --path_to_aligner /data/proj2/popgen/a.ramesh/software/hisat2-2.2.1/ /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
 cat samplenames2 | while read line ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark_genome_preparation --hisat2 --verbose --path_to_aligner /data/proj2/popgen/a.ramesh/software/hisat2-2.2.1/ $line ; done
 ```
 
-12. May methylomes to sample specific reference genomes
+13. May methylomes to sample specific reference genomes
 ```
 sed 's/^/\/data\/proj2\/popgen\/a.ramesh\/projects\/methylomes\/soybean\/pseudogenomes\//' samplenames | paste samplenames - >samplenames4
 cat samplenames4 |  while read -r value1 value2 remainder ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark --multicore 4 --hisat2 --path_to_hisat2 /data/proj2/popgen/a.ramesh/software/hisat2-2.2.1/ --genome_folder $value2 -1 $value1.1.paired.fq.gz -2 $value1.2.paired.fq.gz  ; done
 ```
 
-13. Deduplicate methyalation reads
+14. Deduplicate methyalation reads
 ```
 for file in *_bismark_hisat2_pe.bam; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/deduplicate_bismark --bam $file ; done
 ```
 
-14. Call methylation variants
+15. Call methylation variants
 ```
 cat samplenames4 |  while read -r value1 value2 remainder ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 10G --cytosine_report --genome_folder $value2 $value1.1.paired_bismark_hisat2_pe.deduplicated.bam ; done
 ```
 
-15. Do binomial test
+16. Do binomial test
 ```
 setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/soybean/data")
 library(dplyr)
@@ -273,7 +273,7 @@ cov_context4[is.na(cov_context4)] <- "./."
 write.table(cbind(meta2,cov_context4),file="soybean_meth_var_invar.vcf",quote = F, row.names = F,sep="\t")
 ```
 
-16. Some general stats
+17. Some general stats
 ```
 vcftools --gzvcf soybean_snps_filtered.recode.vcf.gz --out soybean_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 vcftools --gzvcf soybean_snps_filtered.recode.vcf.gz --out soybean_snp --min-alleles 2  --max-missing 0.5 --window-pi  10000 --bed /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
