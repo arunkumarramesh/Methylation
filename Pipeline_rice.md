@@ -310,7 +310,7 @@ cov_context2$position   <- as.numeric(gsub(".*_","",cov_context2$ID))
 write.table(cov_context2,file="cov_context3.txt",row.names = F)
 ```
 
-18. This R script is to generate methyaltion vcfs and the multihetsep file for SMCm
+18. This R script is to generate methylation vcfs 
 
 ```
 setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
@@ -364,53 +364,6 @@ setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 #meta2$POS <- as.numeric(meta2$POS)
 #meta2 <- meta2[order(meta2$`#CHROM`,meta2$POS),]
 #write.table(meta2,file="rice_meth_var_invar.vcf",quote = F, row.names = F,sep="\t")
-
-#first run 'vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-missing 0.5  --recode --bed  gene_pos.bed '
-vcfnames <- as.character(t(read.table(file="vcfnames")))
-
-cov_context3 <- read.table(file="rice_meth_var_invar.recode.vcf")
-colnames(cov_context3) <- vcfnames
-
-meta <- cov_context3[c(1,2,6)]
-colnames(meta) <- c("CHROM","POS","VAULE")
-cov_context3 <- cov_context3[-c(1:9)]
-
-cov_context3 <- cov_context3[grep("^C",colnames(cov_context3))]
-
-cov_context3[cov_context3 == "./."] <- "CC"
-cov_context3[cov_context3 == "0/0"] <- "DD"
-cov_context3[cov_context3 == "1/1"] <- "MM"
-library(tidyr)
-cov_context3 <- unite(cov_context3, col='combined', colnames(cov_context3), sep='')
-meta <- cbind(meta,cov_context3)
-
-meta_1 <- meta[meta$CHROM %in% 1,]
-meta_2 <- meta[meta$CHROM %in% 2,]
-meta_3 <- meta[meta$CHROM %in% 3,]
-meta_4 <- meta[meta$CHROM %in% 4,]
-meta_5 <- meta[meta$CHROM %in% 5,]
-meta_6 <- meta[meta$CHROM %in% 6,]
-meta_7 <- meta[meta$CHROM %in% 7,]
-meta_8 <- meta[meta$CHROM %in% 8,]
-meta_9 <- meta[meta$CHROM %in% 9,]
-meta_10 <- meta[meta$CHROM %in% 10,]
-meta_11 <- meta[meta$CHROM %in% 11,]
-meta_12 <- meta[meta$CHROM %in% 12,]
-
-write.table(meta_1,file="rice_multihetsep_meth_1",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_2,file="rice_multihetsep_meth_2",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_3,file="rice_multihetsep_meth_3",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_4,file="rice_multihetsep_meth_4",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_5,file="rice_multihetsep_meth_5",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_6,file="rice_multihetsep_meth_6",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_7,file="rice_multihetsep_meth_7",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_8,file="rice_multihetsep_meth_8",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_9,file="rice_multihetsep_meth_9",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_10,file="rice_multihetsep_meth_10",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_11,file="rice_multihetsep_meth_11",quote = F, col.names = F,row.names = F,sep="\t")
-write.table(meta_12,file="rice_multihetsep_meth_12",quote = F, col.names = F,row.names = F,sep="\t")
-
-
 ```
 
 19. Get vcf header
@@ -420,7 +373,46 @@ cat vcfheader lyrata_meth.vcf >lyrata_meth_all.vcf
 cat vcfheader rice_meth_var_invar.vcf >rice_meth_var_invar_all.vcf
 ```
 
-20. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
+20. Generate multihetsep file for SMCm for SMPs. Do for indica1 and indica2
+```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
+
+cat vcfheader rice_meth_SMCm.vcf >rice_meth_allsites.vcf
+bgzip -f rice_meth_allsites.vcf
+tabix -f rice_meth_allsites.vcf.gz
+cat samplenames |  while read -r  sample remainder; do bcftools view -c1 -O v -s $sample -o $sample.filtered.vcf rice_meth_allsites.vcf.gz ; done
+
+for file in *.filtered.vcf ; do bcftools annotate -x INFO,^FORMAT/GT -O v -o ${file/.filtered/.annotated} $file ; done
+
+for file in *.annotated.vcf  ; do bgzip -f $file; done
+for file in *.annotated.vcf.gz  ; do tabix -f $file; done
+
+cat sample_chr2 |  while read -r value1 value2 remainder ;  do vcftools --gzvcf $value1.annotated.vcf.gz --out $value1.$value2.snps --min-alleles 2 --max-alleles 3 --recode --recode-INFO-all  --chr $value2 ; done
+
+for file in *.snps.recode.vcf  ; do bgzip -f $file; done
+for file in *.snps.recode.vcf.gz  ; do tabix -f $file; done
+
+cat chrlist2 | while read line; do /data/proj2/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C019.$line.snps.recode.vcf.gz C135.$line.snps.recode.vcf.gz C139.$line.snps.recode.vcf.gz C151.$line.snps.recode.vcf.gz ZS97.$line.snps.recode.vcf.gz >indica1_multihetsep_meth_$line ; done
+cat chrlist2 | while read line; do /data/proj2/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C148.$line.snps.recode.vcf.gz W161.$line.snps.recode.vcf.gz W169.$line.snps.recode.vcf.gz MH63.$line.snps.recode.vcf.gz >indica2_multihetsep_meth_$line  ; done
+
+```
+21. Generate multihetsep file for SMCm for SNPs. Do for indica1 and indica2
+
+```
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
+
+cat samplenames |  while read -r  sample remainder; do /proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -O v -s $sample -o $sample.filtered.vcf  --regions 1,2,3,4,5,6,7,8,9,10,11,12 rice_snps_filtered.recode.vcf.gz; done
+for file in *.filtered.vcf ; do /proj/popgen/a.ramesh/software/bcftools-1.16/bcftools annotate -x INFO,^FORMAT/GT -O v -o ${file/.filtered/.annotated} $file ; done
+for file in *.annotated.vcf; do sed -i '/0\/1/d' $file ; done
+cat sample_chr2 |  while read -r value1 value2 remainder ; do  /proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --max-alleles 2 --vcf  $value1.annotated.vcf --out $value1.$value2.snps --recode --recode-INFO-all  --remove-indels --max-missing 1 --chr $value2 ; done
+for file in *.snps.recode.vcf; do bgzip -f $file; done
+for file in *.snps.recode.vcf.gz; do tabix -f $file; done
+
+cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C019.$line.snps.recode.vcf.gz C135.$line.snps.recode.vcf.gz C139.$line.snps.recode.vcf.gz C151.$line.snps.recode.vcf.gz ZS97.$line.snps.recode.vcf.gz >indica1_multihetsep_$line ; done
+cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C148.$line.snps.recode.vcf.gz W161.$line.snps.recode.vcf.gz W169.$line.snps.recode.vcf.gz MH63.$line.snps.recode.vcf.gz >indica2_multihetsep_$line  ; done
+```
+
+22. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
 vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  gene_pos.bed
