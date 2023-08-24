@@ -372,7 +372,39 @@ cat rice_snps_filtered.recode.vcf | grep '##' > vcfheader
 cat vcfheader lyrata_meth.vcf >lyrata_meth_all.vcf
 cat vcfheader rice_meth_var_invar.vcf >rice_meth_var_invar_all.vcf
 ```
+19. Get methylation vcf file compatable for multihetsep
+```
+setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 
+cov_context3 <- read.table(file="rice_meth_var_invar_all.vcf",header=T)
+na_count <- apply(cov_context3[6:ncol(cov_context3)], 1, function(x) sum(is.na(x)))
+na_count <- na_count/ncol(cov_context3[6:ncol(cov_context3)])
+cov_context3 <- cov_context3[na_count < 0.5,] # change to appropriate number
+cov_context4 <- cov_context3
+
+meta <- cov_context3[1:3]
+colnames(meta) <- c("#CHROM","POS","ID")
+meta$REF <- "D"
+meta$ALT <- "M"
+meta$QUAL <- 4000
+meta$FILTER <- "PASS"
+meta$INFO <- "DP=1000"
+meta$FORMAT <- "GT"
+
+meta <- meta[order(meta$`#CHROM`,meta$POS),]
+
+cov_context3 <- cov_context3[-c(1:5)]
+cov_context3[cov_context3 == "U"] <- "0/0"
+cov_context3[cov_context3 == "M"] <- "1/1"
+cov_context3[is.na(cov_context3)] <- "2/2"
+
+meta <- cbind(meta,cov_context3)
+
+meta[which(apply(meta[10:ncol(meta)], 1, function(r) any(r %in% c("2/2")))),]$ALT <- "M,C"
+meta[which(apply(meta[10:ncol(meta)], 1, function(r) all(r %in% c("0/0")))),]$ALT <- "." 
+
+write.table(meta,file="rice_meth_SMCm.vcf",quote = F, row.names = F,sep="\t")
+```
 20. Generate multihetsep file for SMCm for SMPs. Do for indica1 and indica2
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
