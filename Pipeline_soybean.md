@@ -1,3 +1,5 @@
+# Pipeline for getting SMPs and SNPs for Soybean
+
 1. Get data
 ```
 /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch -X 9999999999999 --option-file  PRJNA432760_soybean_wgbs_SRR_Acc_List.txt  -O data
