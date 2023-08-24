@@ -58,7 +58,7 @@ for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_lin
 cd /proj/popgen/a.ramesh/projects/methylomes/arabidopsis/data/paired
 for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --gzip --split-3  $file; done
 ```
-4. Trim data
+4. Trim data 
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/arabidopsis/data/
 for file in *.fastq.gz; do java -jar /proj/popgen/a.ramesh/software/Trimmomatic-0.39/trimmomatic-0.39.jar SE -phred33 -threads 5 $file ${file/.fastq.gz/_trim.fq.gz} ILLUMINACLIP:TruSeq3-SE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 ; done
