@@ -219,7 +219,7 @@ d /proj/popgen/a.ramesh/projects/methylomes/rice/data
 cat samplenames2 |  while read -r value1 value2 remainder ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 10G --cytosine_report --genome_folder $value2 $value1.1.paired_bismark_hisat2_pe.deduplicated.bam ; done
 ```
 
-17. This script is to create methylation vcfs. I need add this after annotating it properly. Lots done here. In R.
+17. This R script is to genotype mC using a binomail test
 ```
 setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 library(dplyr)
@@ -308,8 +308,12 @@ cov_context2$chromosome <- gsub("_.*","",cov_context2$ID)
 cov_context2$position   <- as.numeric(gsub(".*_","",cov_context2$ID))
 
 write.table(cov_context2,file="cov_context3.txt",row.names = F)
+```
 
-etwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
+18. This R script is to generate methyaltion vcfs and the multihetsep file for SMCm
+
+```
+setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 
 #cov_context3 <- read.table(file="cov_context3.txt",header=T)
 #na_count <- apply(cov_context3[6:ncol(cov_context3)], 1, function(x) sum(is.na(x)))
@@ -409,25 +413,23 @@ write.table(meta_12,file="rice_multihetsep_meth_12",quote = F, col.names = F,row
 
 ```
 
-18. Get vcf header
+19. Get vcf header
 ```
-zcat lyrata_snps_filtered.recode.vcf.gz | grep '##' > vcfheader
+cat rice_snps_filtered.recode.vcf | grep '##' > vcfheader
 cat vcfheader lyrata_meth.vcf >lyrata_meth_all.vcf
-
+cat vcfheader rice_meth_var_invar.vcf >rice_meth_var_invar_all.vcf
 ```
 
-19. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
+20. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
 ```
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/
-awk '$3 ~ /^gene$/' Arabidopsis_lyrata.v.1.0.55.chr.gff3 | cut -f 1,4,5 >gene_pos.bed
- 
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna/
-vcftools --gzvcf lyrata.snps_filtered.lc.recode.vcf.gz --out lyrata_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
-vcftools --gzvcf lyrata.snps_filtered.lc.recode.vcf.gz --out lyrata_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
-vcftools --gzvcf lyrata.snps_filtered.lc.recode.vcf.gz --out lyrata_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --het --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
+vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  gene_pos.bed
+vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  gene_pos.bed
+vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --het --bed  gene_pos.bed
 
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data/
-vcftools --vcf lyrata_meth_all.vcf  --out lyrata_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
-vcftools --vcf lyrata_meth_all.vcf  --out lyrata_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
+vcftools --vcf rice_meth_all.vcf  --out rice_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  gene_pos.bed
+vcftools --vcf rice_meth_all.vcf  --out rice_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  gene_pos.bed
+
+vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-missing 0.5  --recode --bed  gene_pos.bed
 
 ```
