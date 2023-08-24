@@ -173,7 +173,7 @@ cat samplenames | while read line ; do mkdir $line  ; done
 cat samplenames | while read line ; do mv $line.merged.fa $line  ; done
 cat samplenames | while read line ; do mv $line.merged.dict $line  ; done
 cat samplenames | while read line ; do mv $line.merged.fa.fai $line  ; done
-sed 's/^/\/data\/proj2\/popgen\/a.ramesh\/projects\/methylomes\/lyrata\/pseudogenomes\//' samplenames | paste samplenames - ## not exactly the same, variants exist
+sed 's/^/\/data\/proj2\/popgen\/a.ramesh\/projects\/methylomes\/lyrata\/pseudogenomes\//' samplenames | paste samplenames - >samplenames2 ## not exactly the same, variants exist
 ```
 
 14. Now map methylation reads with Bismark
