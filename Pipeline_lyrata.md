@@ -336,4 +336,6 @@ cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data/
 vcftools --vcf lyrata_meth_all.vcf  --out lyrata_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
 vcftools --vcf lyrata_meth_all.vcf  --out lyrata_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
 
+vcftools --vcf lyrata_meth_var_invar_all.vcf --out lyrata_meth_var_invar --recode --min-alleles 2 --max-alleles 2 --max-missing 0.5 --bed /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
+
 ```
