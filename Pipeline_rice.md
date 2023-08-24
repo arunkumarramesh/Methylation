@@ -729,7 +729,7 @@ cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 /proj/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
 ```
 
-28. Rscript to count number of cytosines
+29. Rscript to count number of cytosines
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
 
@@ -754,7 +754,7 @@ write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,
 
 ```
 
-29. Get good intervals for Dm alpha
+30. Get good intervals for Dm alpha
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -774,7 +774,7 @@ merged <- merged[merged$prop > 0.05,]
 write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
 ```
 
-30. Theta and Tajima's D for methylation, first get alpha
+31. Theta and Tajima's D for methylation, first get alpha
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
@@ -785,7 +785,7 @@ cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 ```
 
-31. Get good intervals for Dm
+32. Get good intervals for Dm
 ```
 good_intervals <- read.table(file="good_intervals")
 alpha_dm <- read.table(file="alpha_Dm_rice")
@@ -796,7 +796,7 @@ good_intervals <- inner_join(good_intervals,alpha_dm,by="V1")
 write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, col.names = F)
 ```
 
-32. Now get Dm estimates
+33. Now get Dm estimates
 ```
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
 ```
