@@ -5,6 +5,9 @@
 /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch -X 9999999999999 --option-file  PRJNA432760_soybean_wgbs_SRR_Acc_List.txt  -O data
 /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch -X 9999999999999 --option-file  PRJNA432760_soybean_wgs_SRR_Acc_List.txt  -O data_wgs
 for file in *.sra; do /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --split-3 --gzip  $file; done
+
+/data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
+grep 'exon' GCF_000004515.6_Glycine_max_v4.0_genomic.gtf | cut -f 1,4,5 >gene_pos.bed
 ```
 
 2. Trim data
