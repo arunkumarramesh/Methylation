@@ -706,3 +706,39 @@ vcftools --vcf rice_meth_all.vcf  --out rice_meth --min-alleles 2 --max-alleles 
 vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-missing 0.5  --recode --bed  gene_pos.bed
 
 ```
+
+27. Split methylation vcf by gene
+```
+/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/
+mkdir genes_fasta
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
+
+cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar.recode.vcf.gz  $line >$line.var_invar.vcf; done
+wc -l *vcf >vcflengths_var_invar
+```
+
+28. Rscript to count number of cytosines
+ ```
+library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+
+## Only CG context
+files <- read.table(file="filenames")
+files <- as.character(files$V1)
+
+cytsosine_count <- ""
+for (f in 1:length(files)){
+  print(f)
+  cytosines <- c()
+  try(cytosines <- extractCytosinesFromFASTA(files[f], contexts = 'CG'),silent=T)
+  if (length(cytosines) > 0){
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],table(cytosines$context))))
+  } else {
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],0)))
+  }
+  #print(cytsosine_count)
+}
+cytsosine_count <- cytsosine_count[-c(1),]
+write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
+
+ ```
