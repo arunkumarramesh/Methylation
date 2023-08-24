@@ -444,7 +444,256 @@ cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/gen
 cat chrlist2 | while read line; do /proj/popgen/a.ramesh/software/msmc-tools/generate_multihetsep.py --chr $line  C148.$line.snps.recode.vcf.gz W161.$line.snps.recode.vcf.gz W169.$line.snps.recode.vcf.gz MH63.$line.snps.recode.vcf.gz >indica2_multihetsep_$line  ; done
 ```
 
-23. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
+23. Combine multihetsep files for SNPs and SMPs
+```
+for (i in 1:12){
+  snps <- read.table(paste("indica1_multihetsep_",i,sep=""))
+  smps <- read.table(paste("indica1_multihetsep_meth_",i,sep=""))
+  both <- rbind(snps,smps)
+  both <- both[order(both$V1,both$V2),]
+  both$V3 <- c(both$V2[1]-1,diff(both$V2))
+  write.table(both,paste("indica1_multihetsep_snp_meth_",i,sep=""),sep=" ",col.names = F, row.names = F, quote = F)
+}
+
+for (i in 1:12){
+  snps <- read.table(paste("indica2_multihetsep_",i,sep=""))
+  smps <- read.table(paste("indica2_multihetsep_meth_",i,sep=""))
+  both <- rbind(snps,smps)
+  both <- both[order(both$V1,both$V2),]
+  both$V3 <- c(both$V2[1]-1,diff(both$V2))
+  write.table(both,paste("indica2_multihetsep_snp_meth_",i,sep=""),sep=" ",col.names = F, row.names = F, quote = F)
+}
+```
+
+24. SMCm for indica2
+```
+###################
+# Source function #
+###################
+library("eSMC2",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+################################
+
+########
+#Script#
+########
+
+CHR=c(1:12)#
+mu <- 6.95*10^-9
+r=3.6*10^-8
+
+rate_m=3.48*10^(-4)
+rate_d=1.47*10^(-3)
+rate_m_reg=1.6*10^(-4)
+rate_d_reg=9.5*10^(-4)
+
+results_eSMC2=list()
+results_SMCm_site=list()
+results_SMCm_region=list()
+results_SMCm_site_and_region=list()
+
+for(chr in CHR){
+  M=8
+  O=as.matrix(Get_real_data("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/",M=M,paste("indica2_multihetsep_snp_meth_",chr,sep ="" )))
+  rho=r/mu
+  
+  
+  results_SMCm_site[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=F,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  results_SMCm_region[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),nb_site_min=4,window_min=100,Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=2,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  results_SMCm_site_and_region[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),nb_site_min=4,window_min=100,Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=T,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  
+  rm_pos=c()
+  M=dim(O)[1]-2
+  for(m in 1:M){
+    
+    pos=as.numeric(which(O[m,]%in%c("M","D","C")))
+    O[m,pos]="C"
+  }
+  
+  
+  results_eSMC2[[chr]]=eSMC2(n=40,rho=rho,O,maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),Boxs=c(0,0.99),pop=F,SB=F,SF=T,Rho=F,NC=1,mu_b=1,sigma=0.9,beta=1,LH_opt = F,pop_vect = c(4,4,rep(2,16)))
+}
+
+if(T){
+  gen <- 1
+  
+  save(list = ls(), file = "Methylome_indica2_super_clean.RData") 
+  name_sc=c("Saw-tooth "," Bottleneck"," Expansion"," Decrease")
+  col_u=c("red","orange","green","blue","purple")
+  mat_save_p=matrix(NA,nrow=(4*4),ncol=40)
+  mat_save_t=matrix(NA,nrow=(4*4),ncol=40)
+  mat_save_s=matrix(NA,nrow=(4*4),ncol=1)
+  count_p=0
+  count_t=0
+  count_s=0
+  #eSMC
+  plot(c(100,2*10^6),c(1,1), log=c("x"), ylim =c(3,7) ,
+       type="n", xlab= paste("Generations ago",sep=" "), ylab="population size (log10)",main = "")
+  for(x in CHR){
+    
+    
+    
+    lines((results_SMCm_site[[x]]$Tc*results_SMCm_site[[x]]$Ne), log10(results_SMCm_site[[x]]$Xi*0.5*results_SMCm_site[[x]]$Ne), type="s", col=col_u[1])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_site[[x]]$Xi*0.5*results_SMCm_site[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_site[[x]]$Tc*results_SMCm_site[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_site[[x]]$sigma
+    
+    
+    lines((results_SMCm_region[[x]]$Tc*results_SMCm_region[[x]]$Ne), log10(results_SMCm_region[[x]]$Xi*0.5*results_SMCm_region[[x]]$Ne), type="s", col=col_u[2])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_region[[x]]$Xi*0.5*results_SMCm_region[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_region[[x]]$Tc*results_SMCm_region[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_region[[x]]$sigma
+    
+    lines((results_SMCm_site_and_region[[x]]$Tc*results_SMCm_site_and_region[[x]]$Ne), log10(results_SMCm_site_and_region[[x]]$Xi*0.5*results_SMCm_site_and_region[[x]]$Ne), type="s", col=col_u[3])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_site_and_region[[x]]$Xi*0.5*results_SMCm_site_and_region[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_site_and_region[[x]]$Tc*results_SMCm_site_and_region[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_site_and_region[[x]]$sigma
+    
+    
+    Pop=results_eSMC2[[x]]$mu/mu
+    lines((results_eSMC2[[x]]$Tc*Pop), log10(results_eSMC2[[x]]$Xi*0.5*Pop), type="s", col=col_u[4])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_eSMC2[[x]]$Xi*0.5*Pop)
+    mat_save_t[count_t,]=(results_eSMC2[[x]]$Tc*Pop)
+    mat_save_s[count_s,]=results_eSMC2[[x]]$sigma
+    
+  }
+  legend("topright",legend=c("SMCm:Site","SMCm:Region","SMCm:site&region","eSMC2"), col=col_u[1:4], lty=c(1,1),cex=0.75,x.intersp=0.5,y.intersp=0.8)
+}
+write.csv(mat_save_p,file = paste("Methylome_SMCm_Region_indica2_super_clean_n40_mat_save_p_real.csv",sep="_"))
+write.csv(mat_save_t,file = paste("Methylome_SMCm_Region_indica2_super_clean_n40_mat_save_t_real.csv",sep="_"))
+write.csv(mat_save_s,file = paste("Methylome_SMCm_Region_indica2_super_clean_n40_mat_save_s_real.csv",sep="_"))
+
+```
+
+25. SMCm for indica1
+```
+###################
+# Source function #
+###################
+library("eSMC2",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+################################
+
+########
+#Script#
+########
+
+CHR=c(1:12)#
+mu <- 6.95*10^-9
+r=3.6*10^-8
+
+rate_m=3.48*10^(-4)
+rate_d=1.47*10^(-3)
+rate_m_reg=1.6*10^(-4)
+rate_d_reg=9.5*10^(-4)
+
+results_eSMC2=list()
+results_SMCm_site=list()
+results_SMCm_region=list()
+results_SMCm_site_and_region=list()
+
+for(chr in CHR){
+  M=10
+  O=as.matrix(Get_real_data("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/",M=M,paste("indica1_multihetsep_snp_meth_",chr,sep ="" )))
+  rho=r/mu
+  
+  
+  results_SMCm_site[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=F,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  results_SMCm_region[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),nb_site_min=4,window_min=100,Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=2,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  results_SMCm_site_and_region[[chr]]=SMCm(n=40,rho= rho,methylation=c(abs(log10(rate_m)),abs(log10(rate_d))),BoxM=c(1,1),BoxU=c(1,1),O,mu_r=(mu),maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),nb_site_min=4,window_min=100,Boxs=c(0,0.99),pop=F,SB=F,SF=T,ER=F,NC=1,mu_b=1,sigma=0.9,beta=1,Region=T,region_methylation = c(abs(log10(rate_m_reg)),abs(log10(rate_d_reg))),pop_vect = c(4,4,rep(2,16)))
+  
+  
+  rm_pos=c()
+  M=dim(O)[1]-2
+  for(m in 1:M){
+    
+    pos=as.numeric(which(O[m,]%in%c("M","D","C")))
+    O[m,pos]="C"
+  }
+  
+  
+  results_eSMC2[[chr]]=eSMC2(n=40,rho=rho,O,maxit =20,BoxB=c(0.05,1),BoxP=c(3,3),Boxr=c(1,1),Boxs=c(0,0.99),pop=F,SB=F,SF=T,Rho=F,NC=1,mu_b=1,sigma=0.9,beta=1,LH_opt = F,pop_vect = c(4,4,rep(2,16)))
+}
+
+if(T){
+  gen <- 1
+  
+  save(list = ls(), file = "Methylome_indica1_super_clean.RData") 
+  name_sc=c("Saw-tooth "," Bottleneck"," Expansion"," Decrease")
+  col_u=c("red","orange","green","blue","purple")
+mat_save_p=matrix(NA,nrow=(4*5),ncol=40)
+  mat_save_t=matrix(NA,nrow=(4*5),ncol=40)
+  mat_save_s=matrix(NA,nrow=(4*5),ncol=1)
+  count_p=0
+  count_t=0
+  count_s=0
+  #eSMC
+  plot(c(100,2*10^6),c(1,1), log=c("x"), ylim =c(3,7) ,
+       type="n", xlab= paste("Generations ago",sep=" "), ylab="population size (log10)",main = "")
+  for(x in CHR){
+    
+    
+    
+    lines((results_SMCm_site[[x]]$Tc*results_SMCm_site[[x]]$Ne), log10(results_SMCm_site[[x]]$Xi*0.5*results_SMCm_site[[x]]$Ne), type="s", col=col_u[1])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_site[[x]]$Xi*0.5*results_SMCm_site[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_site[[x]]$Tc*results_SMCm_site[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_site[[x]]$sigma
+    
+    
+    lines((results_SMCm_region[[x]]$Tc*results_SMCm_region[[x]]$Ne), log10(results_SMCm_region[[x]]$Xi*0.5*results_SMCm_region[[x]]$Ne), type="s", col=col_u[2])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_region[[x]]$Xi*0.5*results_SMCm_region[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_region[[x]]$Tc*results_SMCm_region[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_region[[x]]$sigma
+    
+    lines((results_SMCm_site_and_region[[x]]$Tc*results_SMCm_site_and_region[[x]]$Ne), log10(results_SMCm_site_and_region[[x]]$Xi*0.5*results_SMCm_site_and_region[[x]]$Ne), type="s", col=col_u[3])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_SMCm_site_and_region[[x]]$Xi*0.5*results_SMCm_site_and_region[[x]]$Ne)
+    mat_save_t[count_t,]=(results_SMCm_site_and_region[[x]]$Tc*results_SMCm_site_and_region[[x]]$Ne)
+    mat_save_s[count_s,]=results_SMCm_site_and_region[[x]]$sigma
+    
+    
+    Pop=results_eSMC2[[x]]$mu/mu
+    lines((results_eSMC2[[x]]$Tc*Pop), log10(results_eSMC2[[x]]$Xi*0.5*Pop), type="s", col=col_u[4])
+    count_p=count_p+1
+    count_t=count_t+1
+    count_s=count_s+1
+    mat_save_p[count_p,]=log10(results_eSMC2[[x]]$Xi*0.5*Pop)
+    mat_save_t[count_t,]=(results_eSMC2[[x]]$Tc*Pop)
+    mat_save_s[count_s,]=results_eSMC2[[x]]$sigma
+    
+  }
+  legend("topright",legend=c("SMCm:Site","SMCm:Region","SMCm:site&region","eSMC2"), col=col_u[1:4], lty=c(1,1),cex=0.75,x.intersp=0.5,y.intersp=0.8)
+}
+write.csv(mat_save_p,file = paste("Methylome_SMCm_Region_indica1_super_clean_n40_mat_save_p_real.csv",sep="_"))
+write.csv(mat_save_t,file = paste("Methylome_SMCm_Region_indica1_super_clean_n40_mat_save_t_real.csv",sep="_"))
+write.csv(mat_save_s,file = paste("Methylome_SMCm_Region_indica1_super_clean_n40_mat_save_s_real.csv",sep="_"))
+
+```
+
+26. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
 vcftools --gzvcf rice_snps_filtered.recode.vcf.gz --out rice_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  gene_pos.bed
