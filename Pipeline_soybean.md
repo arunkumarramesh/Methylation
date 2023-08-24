@@ -33,6 +33,11 @@ for file in *_readgroup.bam; do samtools view -q 20 -f 0x0002 -F 0x0004 -F 0x000
 for file in *_mq20.bam; do samtools sort -@ 5 $file >${file/_mq20.bam/_sort.bam} ; done
 for file in *_sort.bam ; do picard MarkDuplicates -I $file -O ${file/_sort.bam/_marked.bam} -M ${file/_sort.bam/_metrics.txt} ; done
 for file in *_marked.bam ; do picard BuildBamIndex -I $file; done
+
+ls *_marked.bam > lc_files
+ls *_marked.bam | sed 's/*_marked.bam//' | paste - lc_files >lc_files2 ## for haplotyper caller script (file also called hc_files2)
+
+
 ```
 
 6. Call variants in each sample
@@ -97,7 +102,7 @@ gatk CombineGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/gen
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna -V soybean.cohort.g.vcf.gz -O soybean.output.vcf.gz
 
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna -all-sites -V soybean.cohort.g.vcf.gz -O soybean.var_invar.vcf.gz
-genotypegvcf.sh (END)
+genotypegvcf.sh
 ```
 
 9. select SNP variants and invariant sites
