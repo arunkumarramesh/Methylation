@@ -1,5 +1,4 @@
-# Methylation
-Pipeline for getting SMPs and SNPs
+# Pipeline for getting SMPs and SNPs
 
 Example for Arabidopsis lyrata shown
 
