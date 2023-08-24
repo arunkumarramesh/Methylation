@@ -1,6 +1,4 @@
-# Pipeline for getting SMPs and SNPs
-
-Example for Arabidopsis lyrata shown
+# Pipeline for getting SMPs and SNPs for Arabidopsis lyrata
 
 1. Download data from NCBI
 ```
