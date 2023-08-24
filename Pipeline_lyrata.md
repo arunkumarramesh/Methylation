@@ -60,6 +60,7 @@ for file in *_marked.bam ; do gatk SplitNCigarReads -R /data/proj2/popgen/a.rame
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna/
 for file in *_split.bam ; do picard AddOrReplaceReadGroups -I $file -O ${file/_split.bam/_readgroup.bam} -LB species -PL illumina -PU 1 -SM $file; done
 for file in *_readgroup.bam ; do picard BuildBamIndex -I $file; done
+ls *_readgroup.bam > lc_files
 ls *_readgroup.bam | sed 's/*_readgroup.bam//' | paste - lc_files >lc_files2 ## for haplotyper caller script (file also called hc_files2)
 ```
 
