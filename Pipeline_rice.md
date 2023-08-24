@@ -14,6 +14,8 @@ for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_lin
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna
 for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --split-3 --gzip  $file; done
 
+/proj/popgen/a.ramesh/projects/methylomes/rice/genomes
+grep 'exon' Oryza_sativa.IRGSP-1.0.55.gtf | cut -f 1,4,5 >gene_pos.bed
 ```
 
 2. Trim data
@@ -40,7 +42,7 @@ find . -name '*.sort.bam' -exec mv {} . \;
 
 ```
 
-4. Add read groupsls
+4. Add read groups
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 
@@ -712,14 +714,23 @@ vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-miss
 /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/
 mkdir genes_fasta
 
+sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
+
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 
 cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar.recode.vcf.gz  $line >$line.var_invar.vcf; done
 wc -l *vcf >vcflengths_var_invar
 ```
 
+28. Split reference fasta file by gene
+```
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
+#cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $line >>genes.fasta; done
+/proj/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+```
+
 28. Rscript to count number of cytosines
- ```
+```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
 
 ## Only CG context
@@ -741,4 +752,51 @@ for (f in 1:length(files)){
 cytsosine_count <- cytsosine_count[-c(1),]
 write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
 
- ```
+```
+
+29. Get good intervals for Dm alpha
+```
+vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
+vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
+vcflengths_var_invar$V2 <- gsub(".var_invar.vcf","",vcflengths_var_invar$V2)
+colnames(vcflengths_var_invar) <- c("numvar","interval")
+cytsosine_count <- read.table(file="cytsosine_count.txt")
+cytsosine_count$V1 <- gsub(".fa","",cytsosine_count$V1)
+colnames(cytsosine_count) <- c("interval","numc")
+
+library(dplyr)
+
+merged <- inner_join(cytsosine_count,vcflengths_var_invar,by="interval")
+merged$prop <- merged$numvar/merged$numc
+merged <- merged[merged$numvar > 10,]
+merged <- merged[merged$prop > 0.05,]
+
+write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
+```
+
+30. Theta and Tajima's D for methylation, first get alpha
+```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
+## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
+
+for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+
+cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+```
+
+31. Get good intervals for Dm
+```
+good_intervals <- read.table(file="good_intervals")
+alpha_dm <- read.table(file="alpha_Dm_rice")
+alpha_dm$V1 <- gsub(".input.txt","",alpha_dm$V1)
+alpha_dm <- alpha_dm[1:2]
+good_intervals <- inner_join(good_intervals,alpha_dm,by="V1")
+
+write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, col.names = F)
+```
+
+32. Now get Dm estimates
+```
+cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
+```
