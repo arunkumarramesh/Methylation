@@ -309,6 +309,103 @@ cov_context2$position   <- as.numeric(gsub(".*_","",cov_context2$ID))
 
 write.table(cov_context2,file="cov_context3.txt",row.names = F)
 
+etwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
+
+#cov_context3 <- read.table(file="cov_context3.txt",header=T)
+#na_count <- apply(cov_context3[6:ncol(cov_context3)], 1, function(x) sum(is.na(x)))
+#na_count <- na_count/ncol(cov_context3[6:ncol(cov_context3)])
+#cov_context3 <- cov_context3[na_count < 0.5,] # change to appropriate number
+#cov_context4 <- cov_context3
+#ploymorphic <- apply(cov_context3[6:ncol(cov_context3)], 1, table)
+#ploymorphic <- sapply(ploymorphic,length)
+#cov_context3 <- cov_context3[ploymorphic > 1,]
+
+#meta <- cov_context3[1:3]
+#colnames(meta) <- c("#CHROM","POS","ID")
+#meta$REF <- "A"
+#meta$ALT <- "T"
+#meta$QUAL <- 4000
+#meta$FILTER <- "PASS"
+#meta$INFO <- "DP=1000"
+#meta$FORMAT <- "GT"
+
+#cov_context3 <- cov_context3[-c(1:5)]
+#cov_context3[cov_context3 == "U"] <- "0/0"
+#cov_context3[cov_context3 == "M"] <- "1/1"
+#cov_context3[is.na(cov_context3)] <- "./."
+
+#meta <- cbind(meta,cov_context3)
+#meta <- meta[meta$`#CHROM` %in% c("1","2","3","4","5","6","7","8","9","10","11","12"),]
+#meta$`#CHROM` <- as.numeric(meta$`#CHROM`)
+#meta$POS <- as.numeric(meta$POS)
+#meta <- meta[order(meta$`#CHROM`,meta$POS),]
+
+#write.table(meta,file="rice_meth.vcf",quote = F, row.names = F,sep="\t")
+
+#meta2 <- cov_context4[1:3]
+#colnames(meta2) <- c("#CHROM","POS","ID")
+#meta2$REF <- "A"
+#meta2$ALT <- "T"
+#meta2$QUAL <- 4000
+#meta2$FILTER <- "PASS"
+#meta2$INFO <- "DP=1000"
+#meta2$FORMAT <- "GT"
+#cov_context4 <- cov_context4[-c(1:5)]
+#cov_context4[cov_context4 == "U"] <- "0/0"
+#cov_context4[cov_context4 == "M"] <- "1/1"
+#cov_context4[is.na(cov_context4)] <- "./."
+#meta2 <- cbind(meta2,cov_context4)
+#meta2 <- meta2[meta2$`#CHROM` %in% c("1","2","3","4","5","6","7","8","9","10","11","12"),]
+#meta2$`#CHROM` <- as.numeric(meta2$`#CHROM`)
+#meta2$POS <- as.numeric(meta2$POS)
+#meta2 <- meta2[order(meta2$`#CHROM`,meta2$POS),]
+#write.table(meta2,file="rice_meth_var_invar.vcf",quote = F, row.names = F,sep="\t")
+
+#first run 'vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-missing 0.5  --recode --bed  gene_pos.bed '
+vcfnames <- as.character(t(read.table(file="vcfnames")))
+
+cov_context3 <- read.table(file="rice_meth_var_invar.recode.vcf")
+colnames(cov_context3) <- vcfnames
+
+meta <- cov_context3[c(1,2,6)]
+colnames(meta) <- c("CHROM","POS","VAULE")
+cov_context3 <- cov_context3[-c(1:9)]
+
+cov_context3 <- cov_context3[grep("^C",colnames(cov_context3))]
+
+cov_context3[cov_context3 == "./."] <- "CC"
+cov_context3[cov_context3 == "0/0"] <- "DD"
+cov_context3[cov_context3 == "1/1"] <- "MM"
+library(tidyr)
+cov_context3 <- unite(cov_context3, col='combined', colnames(cov_context3), sep='')
+meta <- cbind(meta,cov_context3)
+
+meta_1 <- meta[meta$CHROM %in% 1,]
+meta_2 <- meta[meta$CHROM %in% 2,]
+meta_3 <- meta[meta$CHROM %in% 3,]
+meta_4 <- meta[meta$CHROM %in% 4,]
+meta_5 <- meta[meta$CHROM %in% 5,]
+meta_6 <- meta[meta$CHROM %in% 6,]
+meta_7 <- meta[meta$CHROM %in% 7,]
+meta_8 <- meta[meta$CHROM %in% 8,]
+meta_9 <- meta[meta$CHROM %in% 9,]
+meta_10 <- meta[meta$CHROM %in% 10,]
+meta_11 <- meta[meta$CHROM %in% 11,]
+meta_12 <- meta[meta$CHROM %in% 12,]
+
+write.table(meta_1,file="rice_multihetsep_meth_1",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_2,file="rice_multihetsep_meth_2",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_3,file="rice_multihetsep_meth_3",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_4,file="rice_multihetsep_meth_4",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_5,file="rice_multihetsep_meth_5",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_6,file="rice_multihetsep_meth_6",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_7,file="rice_multihetsep_meth_7",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_8,file="rice_multihetsep_meth_8",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_9,file="rice_multihetsep_meth_9",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_10,file="rice_multihetsep_meth_10",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_11,file="rice_multihetsep_meth_11",quote = F, col.names = F,row.names = F,sep="\t")
+write.table(meta_12,file="rice_multihetsep_meth_12",quote = F, col.names = F,row.names = F,sep="\t")
+
 
 ```
 
@@ -316,6 +413,7 @@ write.table(cov_context2,file="cov_context3.txt",row.names = F)
 ```
 zcat lyrata_snps_filtered.recode.vcf.gz | grep '##' > vcfheader
 cat vcfheader lyrata_meth.vcf >lyrata_meth_all.vcf
+
 ```
 
 19. Get summary statistics for methylation and genomic variants. Done on biallelic SNPs. Further NA filtering in R. Only keep gene body variants.
