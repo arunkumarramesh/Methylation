@@ -163,8 +163,8 @@ sed -i -e 's/9311_split.bam/C148/' -e 's/Aijiaonante_split.bam/C019/' -e 's/BASM
 
 11. Get chromosome and sample names, can be done many ways
 ```
-cut -f 1 ../genomes/PL_genomeandchloroplast_assemblies_S119.fa.fai >chrlist
-ls *_marked.bam | sed 's/_marked.bam//' >samplenames
+cut -f 1 ../genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa.fai >chrlist
+ls *_split.bam | sed 's/_split.bam//' >samplenames
 ```
 
 12. Create combined list containing every pair of chromosome and sample names. In R. 
@@ -178,45 +178,138 @@ write.table(fileall, file = "sample_chr", quote = F, sep = "\t", row.names = F, 
 
 13. Create pseudogenomes by substituting SNPs for each sample from VCF into the reference genome
 ```
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna/
-bgzip lyrata_snps_filtered.recode.vcf
-tabix lyrata_snps_filtered.recode.vcf.gz
-cat sample_chr | while read -r value1 value2 remainder ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/Arabidopsis_lyrata.v.1.0.dna.toplevel_chrloroplast.fa $value2 | bcftools consensus -M N -s $value1 -p ${value1/$/_} -H 1pIu lyrata_snps_filtered.recode.vcf.gz >>${value2/$/_lyrata.fa}; done
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
+/proj/popgen/a.ramesh/software/htslib-1.16/bgzip rice_snps_filtered.recode.vcf
+/proj/popgen/a.ramesh/software/htslib-1.16/tabix  rice_snps_filtered.recode.vcf.gz
+cat sample_chr | while read -r value1 value2 remainder ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $value2 | /proj/popgen/a.ramesh/software/bcftools-1.16/bcftools consensus -M N -s $value1 -p ${value1/$/_} -H 1pIu rice_snps_filtered.recode.vcf.gz >>${value2/$/_rice.fa}; done
 cat chrlist | while read line; do /data/proj2/popgen/a.ramesh/software/faSplit byname $line ${line/^/chr_} ; done
-mkdir /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/pseudogenomes
-mv *fa /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/pseudogenomes
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/pseudogenomes
+mkdir /proj/popgen/a.ramesh/projects/methylomes/rice/pseudogenomes
+mv *fa /proj/popgen/a.ramesh/projects/methylomes/rice/pseudogenomes
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/pseudogenomes
 cat samplenames | while read line ; do cat $line*.fa >$line.merged.fa  ; done
 for file in *.merged.fa ; do samtools faidx $file; done
-for file in *.merged.fa ; do picard CreateSequenceDictionary -R $file -O ${file/.fa/.dict}; done
+for file in *.merged.fa ; do java -jar /proj/popgen/a.ramesh/software/picard.jar CreateSequenceDictionary -R $file -O ${file/.fa/.dict}; done
 cat samplenames | while read line ; do mkdir $line  ; done
 cat samplenames | while read line ; do mv $line.merged.fa $line  ; done
 cat samplenames | while read line ; do mv $line.merged.dict $line  ; done
 cat samplenames | while read line ; do mv $line.merged.fa.fai $line  ; done
-sed 's/^/\/data\/proj2\/popgen\/a.ramesh\/projects\/methylomes\/lyrata\/pseudogenomes\//' samplenames | paste samplenames - ## not exactly the same, variants exist
+cat samplenames2 | while read line ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark_genome_preparation --hisat2 --verbose --path_to_aligner /proj/popgen/a.ramesh/software/hisat2-2.2.1/ $line ; done
+
 ```
 
 14. Now map methylation reads with Bismark
 ```
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data/
-cat samplenames2 |  while read -r value1 value2 remainder ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark --multicore 4 --hisat2 --path_to_hisat2 /data/proj2/popgen/a.ramesh/software/hisat2-2.2.1/ --genome_folder $value2 -1 $value1.1.paired.fq.gz -2 $value1.2.paired.fq.gz  ; done
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data
+
+sed 's/^/\/proj\/popgen\/a.ramesh\/projects\/methylomes\/rice\/pseudogenomes\//' samplenames | paste samplenames >samplenames2
+
+cat samplenames2 |  while read -r value1 value2 remainder ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark --multicore 4 --hisat2 --path_to_hisat2 /proj/popgen/a.ramesh/software/hisat2-2.2.1/ --genome_folder $value2 -1 $value1.1.paired.fq.gz -2 $value1.2.paired.fq.gz  ; done
+
 ```
 
 15. Deduplicate methylation reads with Bismark
 ```
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data
-for file in *_bismark_hisat2_pe.bam; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/deduplicate_bismark --bam $file ; done
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data
+for file in *.1.paired_bismark_hisat2_pe.bam ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/deduplicate_bismark --bam $file ; done
 ```
 
 16. Call methylation variants
 ```
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data
-cat samplenames2 |  while read -r value1 value2 remainder ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 10G --cytosine_report --genome_folder $value2 $value1.1.paired_bismark_hisat2_pe.deduplicated.bam ; done
+d /proj/popgen/a.ramesh/projects/methylomes/rice/data
+cat samplenames2 |  while read -r value1 value2 remainder ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 10G --cytosine_report --genome_folder $value2 $value1.1.paired_bismark_hisat2_pe.deduplicated.bam ; done
 ```
 
 17. This script is to create methylation vcfs. I need add this after annotating it properly. Lots done here. In R.
 ```
-...
+setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
+library(dplyr)
+library(ggplot2)
+
+covfile <- read.table(file="covfiles")
+contextfiles <- read.table(file="contextfiles")
+
+cov <- read.table(file=covfile[1,], header=F)
+colnames(cov) <- c("chromosome", "position", "end.position", "methylation.percentage", "count.methylated", "count.unmethylated" )
+cov$ID <- paste(cov$chromosome,cov$position,sep = "_")
+
+context <- read.table(file=contextfiles[1,],header=F)
+colnames(context) <- c("chromosome", "position", "strand", "count.methylated", "count.unmethylated", "C-context", "trinucleotide context")
+context$ID <- paste(context$chromosome,context$position,sep = "_")
+
+cov_context <- inner_join(cov,context[c(3,6:8)],by="ID")
+dim(cov_context)
+cov_context$chromosome <- gsub(gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile$V1)[1],"",cov_context$chromosome)
+cov_context <- cov_context[cov_context$count.methylated + cov_context$count.unmethylated > 4, ]
+
+cov_context$ID <- paste(cov_context$chromosome,cov_context$position,sep = "_")
+cov_context$count.total <- cov_context$count.methylated + cov_context$count.unmethylated
+cov_context$pval <- 0
+noncoversionrate <- sum(cov_context[cov_context$chromosome %in% "Pt",]$count.methylated)/sum(cov_context[cov_context$chromosome %in% "Pt",]$count.total)
+if (is.na(noncoversionrate)) {
+  noncoversionrate <- 0
+}
+samplename <- gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile[1,])
+
+b <- apply(cov_context[c(5,11)],1,binom.test,p = noncoversionrate, alternative = c("greater"))
+cov_context$pval <- do.call(rbind,lapply(b,function(v){v$p.value}))
+
+cov_context <- cov_context[c(1,2,7,8,9,12)]
+cov_context$fdr <- p.adjust(cov_context$pval,method = "fdr")
+cov_context$call <- "U"
+cov_context[cov_context$fdr < 0.01,]$call <- "M"
+cov_context <- cov_context[-c(6,7)]
+
+colnames(cov_context)[ncol(cov_context)] <- samplename
+cov_context2 <- cov_context
+
+for (i in 2:nrow(covfile)){
+  covfile <- read.table(file="covfiles")
+  contextfiles <- read.table(file="contextfiles")
+  
+  print(i)
+  
+  cov <- read.table(file=covfile[i,], header=F)
+  colnames(cov) <- c("chromosome", "position", "end.position", "methylation.percentage", "count.methylated", "count.unmethylated" )
+  cov$ID <- paste(cov$chromosome,cov$position,sep = "_")
+  
+  context <- read.table(file=contextfiles[i,],header=F)
+  colnames(context) <- c("chromosome", "position", "strand", "count.methylated", "count.unmethylated", "C-context", "trinucleotide context")
+  context$ID <- paste(context$chromosome,context$position,sep = "_")
+  
+  cov_context <- inner_join(cov,context[c(3,6:8)],by="ID")
+  dim(cov_context)
+  cov_context$chromosome <- gsub(gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile$V1)[i],"",cov_context$chromosome)
+  cov_context <- cov_context[cov_context$count.methylated + cov_context$count.unmethylated > 4, ]
+  
+  cov_context$ID <- paste(cov_context$chromosome,cov_context$position,sep = "_")
+  cov_context$count.total <- cov_context$count.methylated + cov_context$count.unmethylated
+  cov_context$pval <- 0
+  noncoversionrate <- sum(cov_context[cov_context$chromosome %in% "Pt",]$count.methylated)/sum(cov_context[cov_context$chromosome %in% "Pt",]$count.total)
+  if (is.na(noncoversionrate)) {
+    noncoversionrate <- 0
+  }
+  samplename <- gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile[i,])
+    
+  b <- apply(cov_context[c(5,11)],1,binom.test,p = noncoversionrate, alternative = c("greater"))
+  cov_context$pval <- do.call(rbind,lapply(b,function(v){v$p.value}))
+
+  cov_context <- cov_context[c(1,2,7,8,9,12)]
+  cov_context$fdr <- p.adjust(cov_context$pval,method = "fdr")
+  cov_context$call <- "U"
+  cov_context[cov_context$fdr < 0.01,]$call <- "M"
+  cov_context <- cov_context[-c(6,7)]
+  
+
+  colnames(cov_context)[ncol(cov_context)] <- samplename
+  cov_context <- cov_context[c(3,6)]
+  cov_context2 <- full_join(cov_context2,cov_context,by="ID")
+}
+cov_context2$chromosome <- gsub("_.*","",cov_context2$ID)
+cov_context2$position   <- as.numeric(gsub(".*_","",cov_context2$ID))
+
+write.table(cov_context2,file="cov_context3.txt",row.names = F)
+
+
 ```
 
 18. Get vcf header
