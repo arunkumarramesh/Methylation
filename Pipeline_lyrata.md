@@ -14,6 +14,9 @@ for file in *.sra; do /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-cent
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna
 for file in *.sra; do /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --split-3 --gzip  $file; done
 
+/data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes
+grep 'exon' Arabidopsis_lyrata.v.1.0.55.gtf | cut -f 1,4,5 >gene_pos.bed
+
 ```
 
 2. Trim data
