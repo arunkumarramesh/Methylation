@@ -1,4 +1,3 @@
-
 1. Get data
 ```
 /data/proj2/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch -X 9999999999999 --option-file  PRJNA432760_soybean_wgbs_SRR_Acc_List.txt  -O data
@@ -132,6 +131,7 @@ cat samplenames2 | while read line ; do /data/proj2/popgen/a.ramesh/software/Bis
 
 12. May methylomes to sample specific reference genomes
 ```
+sed 's/^/\/data\/proj2\/popgen\/a.ramesh\/projects\/methylomes\/soybean\/pseudogenomes\//' samplenames | paste samplenames - >samplenames4
 cat samplenames4 |  while read -r value1 value2 remainder ; do /data/proj2/popgen/a.ramesh/software/Bismark-0.24.0/bismark --multicore 4 --hisat2 --path_to_hisat2 /data/proj2/popgen/a.ramesh/software/hisat2-2.2.1/ --genome_folder $value2 -1 $value1.1.paired.fq.gz -2 $value1.2.paired.fq.gz  ; done
 ```
 
