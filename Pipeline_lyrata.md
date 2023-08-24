@@ -194,7 +194,126 @@ cat samplenames2 |  while read -r value1 value2 remainder ; do /data/proj2/popge
 
 17. This script is to create methylation vcfs. I need add this after annotating it properly. Lots done here. In R.
 ```
-...
+setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data")
+library(dplyr)
+library(ggplot2)
+
+covfile <- read.table(file="covfiles")
+contextfiles <- read.table(file="contextfiles")
+
+cov <- read.table(file=covfile[1,], header=F)
+colnames(cov) <- c("chromosome", "position", "end.position", "methylation.percentage", "count.methylated", "count.unmethylated" )
+cov$ID <- paste(cov$chromosome,cov$position,sep = "-")
+
+context <- read.table(file=contextfiles[1,],header=F)
+colnames(context) <- c("chromosome", "position", "strand", "count.methylated", "count.unmethylated", "C-context", "trinucleotide context")
+context$ID <- paste(context$chromosome,context$position,sep = "-")
+
+cov_context <- inner_join(cov,context[c(3,6:8)],by="ID")
+dim(cov_context)
+cov_context$chromosome <- gsub(".*_split.bam","",cov_context$chromosome)
+cov_context <- cov_context[cov_context$count.methylated + cov_context$count.unmethylated > 4, ]
+
+cov_context$ID <- paste(cov_context$chromosome,cov_context$position,sep = "-")
+cov_context$count.total <- cov_context$count.methylated + cov_context$count.unmethylated
+cov_context$pval <- 0
+noncoversionrate <- sum(cov_context[cov_context$chromosome %in% "NC_034365.1",]$count.methylated)/sum(cov_context[cov_context$chromosome %in% "NC_034365.1",]$count.total)
+
+#cov_context <- cov_context[cov_context$count.total > 9,]
+
+b <- apply(cov_context[c(5,11)],1,binom.test,p = noncoversionrate, alternative = c("greater"))
+cov_context$pval <- do.call(rbind,lapply(b,function(v){v$p.value}))
+
+cov_context <- cov_context[c(1,2,7,8,9,12)]
+cov_context$fdr <- p.adjust(cov_context$pval,method = "fdr")
+cov_context$call <- "U"
+cov_context[cov_context$fdr < 0.01,]$call <- "M"
+cov_context <- cov_context[-c(6,7)]
+
+samplename <- gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile[1,])
+colnames(cov_context)[ncol(cov_context)] <- samplename
+cov_context2 <- cov_context
+
+for (i in 2:nrow(covfile)){
+  covfile <- read.table(file="covfiles")
+  contextfiles <- read.table(file="contextfiles")
+  
+  cov <- read.table(file=covfile[i,], header=F)
+  colnames(cov) <- c("chromosome", "position", "end.position", "methylation.percentage", "count.methylated", "count.unmethylated" )
+  cov$ID <- paste(cov$chromosome,cov$position,sep = "-")
+  
+  context <- read.table(file=contextfiles[i,],header=F)
+  colnames(context) <- c("chromosome", "position", "strand", "count.methylated", "count.unmethylated", "C-context", "trinucleotide context")
+  context$ID <- paste(context$chromosome,context$position,sep = "-")
+  
+  cov_context <- inner_join(cov,context[c(3,6:8)],by="ID")
+  dim(cov_context)
+  cov_context$chromosome <- gsub(".*_split.bam","",cov_context$chromosome)
+  cov_context <- cov_context[cov_context$count.methylated + cov_context$count.unmethylated > 4, ]
+  
+  cov_context$ID <- paste(cov_context$chromosome,cov_context$position,sep = "-")
+  cov_context$count.total <- cov_context$count.methylated + cov_context$count.unmethylated
+  cov_context$pval <- 0
+  noncoversionrate <- sum(cov_context[cov_context$chromosome %in% "NC_034365.1",]$count.methylated)/sum(cov_context[cov_context$chromosome %in% "NC_034365.1",]$count.total)
+  
+  #cov_context <- cov_context[cov_context$count.total > 9,]
+  
+  b <- apply(cov_context[c(5,11)],1,binom.test,p = noncoversionrate, alternative = c("greater"))
+  cov_context$pval <- do.call(rbind,lapply(b,function(v){v$p.value}))
+
+  cov_context <- cov_context[c(1,2,7,8,9,12)]
+  cov_context$fdr <- p.adjust(cov_context$pval,method = "fdr")
+  cov_context$call <- "U"
+  cov_context[cov_context$fdr < 0.01,]$call <- "M"
+  cov_context <- cov_context[-c(6,7)]
+  
+  samplename <- gsub(".1.paired_bismark_hisat2_pe.deduplicated.bismark.cov","",covfile[i,])
+  colnames(cov_context)[ncol(cov_context)] <- samplename
+  cov_context <- cov_context[c(3,6)]
+  cov_context2 <- full_join(cov_context2,cov_context,by="ID")
+}
+
+cov_context2$chromosome <- gsub("-.*","",cov_context2$ID)
+cov_context2$position   <- as.numeric(gsub(".*-","",cov_context2$ID))
+write.table(cov_context2,file="cov_context3.txt",row.names = F)
+
+cov_context3 <- read.table(file="cov_context3.txt",header=T)
+na_count <- apply(cov_context3[6:ncol(cov_context3)], 1, function(x) sum(is.na(x)))
+na_count <- na_count/ncol(cov_context3[6:ncol(cov_context3)])
+cov_context3 <- cov_context3[na_count < 0.5,] # change to appropriate number
+cov_context4 <- cov_context3
+ploymorphic <- apply(cov_context3[6:ncol(cov_context3)], 1, table)
+ploymorphic <- sapply(ploymorphic,length)
+cov_context3 <- cov_context3[ploymorphic > 1,]
+
+meta <- cov_context3[1:3]
+colnames(meta) <- c("#CHROM","POS","ID")
+meta$REF <- "A"
+meta$ALT <- "T"
+meta$QUAL <- 4000
+meta$FILTER <- "PASS"
+meta$INFO <- "DP=1000"
+meta$FORMAT <- "GT"
+cov_context3 <- cov_context3[-c(1:5)]
+cov_context3[cov_context3 == "U"] <- "0/0"
+cov_context3[cov_context3 == "M"] <- "1/1"
+cov_context3[is.na(cov_context3)] <- "./."
+write.table(cbind(meta,cov_context3),file="lyrata_meth.vcf",quote = F, row.names = F,sep="\t")
+
+meta2 <- cov_context4[1:3]
+colnames(meta2) <- c("#CHROM","POS","ID")
+meta2$REF <- "A"
+meta2$ALT <- "T"
+meta2$QUAL <- 4000
+meta2$FILTER <- "PASS"
+meta2$INFO <- "DP=1000"
+meta2$FORMAT <- "GT"
+cov_context4 <- cov_context4[-c(1:5)]
+cov_context4[cov_context4 == "U"] <- "0/0"
+cov_context4[cov_context4 == "M"] <- "1/1"
+cov_context4[is.na(cov_context4)] <- "./."
+write.table(cbind(meta2,cov_context4),file="lyrata_meth_var_invar.vcf",quote = F, row.names = F,sep="\t")
+
 ```
 
 18. Get vcf header
