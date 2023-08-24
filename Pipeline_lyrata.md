@@ -128,6 +128,7 @@ gatk CombineGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/geno
 ```
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna/
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/Arabidopsis_lyrata.v.1.0.dna.toplevel_chrloroplast.fa -V lyrata.cohort.g.vcf.gz -O lyrata.output.vcf.gz
+gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/Arabidopsis_lyrata.v.1.0.dna.toplevel_chrloroplast.fa -all-sites -V lyrata.cohort.g.vcf.gz -O lyrata.var_invar.vcf.gz
 ```
 
 10. Filter vcf, only keep high quality SNPs
@@ -135,12 +136,16 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R /data/proj2/popgen/a.ramesh/projec
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna/
 gatk SelectVariants -V lyrata.output.vcf.gz -select-type SNP -O lyrata.snps.vcf.gz
 vcftools --gzvcf lyrata.snps.vcf.gz --out lyrata_snps_filtered --recode --recode-INFO-all --minDP 20 --minGQ 30  --minQ 30
+
+gatk SelectVariants -V lyrata.var_invar.vcf.gz -select-type NO_VARIATION -O lyrata.invar.vcf.gz 
+vcftools --gzvcf lyrata.invar.vcf.gz --out lyrata.invar --recode --recode-INFO-all --minDP 20 --minGQ 30 --minQ 30 --max-missing 0.5 --bed /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
 ```
 
 11. Get chromosome and sample names, can be done many ways
+```
 cut -f 1 ../genomes/PL_genomeandchloroplast_assemblies_S119.fa.fai >chrlist
 ls *_marked.bam | sed 's/_marked.bam//' >samplenames
-
+```
 
 12. Create combined list containing every pair of chromosome and sample names. In R. 
 ```
