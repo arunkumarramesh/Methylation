@@ -722,14 +722,70 @@ cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar.reco
 wc -l *vcf >vcflengths_var_invar
 ```
 
-28. Split reference fasta file by gene
+28. Get per gene theta and tajima's D for SNPs
+```
+vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
+vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
+vcflengths_var_invar$V2 <- gsub(".var_invar.vcf","",vcflengths_var_invar$V2)
+colnames(vcflengths_var_invar) <- c("numvar","interval")
+vcflengths_var_invar$length <- as.numeric(gsub(".*-","", gsub(".*:","",vcflengths_var_invar$interval))) - as.numeric(gsub("-.*","", gsub(".*:","",vcflengths_var_invar$interval)))
+vcflengths_var_invar$prop <- vcflengths_var_invar$numvar/vcflengths_var_invar$length
+vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$numvar < 11,]
+vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$prop < 0.05,]
+
+write.table(paste("rm ",vcflengths_var_invar$interval,".var_invar.vcf",sep=""),file="bad_intervals.sh",sep="\t",quote=F,row.names = F, col.names = F)
+
+vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
+vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
+vcflengths_var_invar$V2 <- gsub(".var_invar.vcf","",vcflengths_var_invar$V2)
+colnames(vcflengths_var_invar) <- c("numvar","interval")
+vcflengths_var_invar$length <- as.numeric(gsub(".*-","", gsub(".*:","",vcflengths_var_invar$interval))) - as.numeric(gsub("-.*","", gsub(".*:","",vcflengths_var_invar$interval)))
+vcflengths_var_invar$prop <- vcflengths_var_invar$numvar/vcflengths_var_invar$length
+vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$numvar > 10,]
+vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$prop > 0.05,]
+
+write.table(cbind(paste(vcflengths_var_invar$interval,".all.vcf",sep=""),vcflengths_var_invar$length),file="goodfiles",sep="\t",quote=F,row.names = F, col.names = F)
+
+goodfiles <- read.table(file="goodfiles")
+for(f in 1:nrow(goodfiles)){
+  i=0
+  while(i<200){
+    print(i)
+    i <- i + 1
+    system(paste("/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --vcf ",goodfiles$V1[f]," --out tmp --TajimaD ",goodfiles$V2[f]+i,sep=""))
+    tmpfile <- read.table(file="tmp.Tajima.D",header = T)
+    print(nrow(tmpfile))
+    if (nrow(tmpfile) == 1) {
+      system(paste("/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --vcf ",goodfiles$V1[f]," --out ",goodfiles$V1[f]," --TajimaD ",goodfiles$V2[f]+i,sep=""))
+      break
+    }
+  }
+}
+
+for(f in 1:nrow(goodfiles)){
+  i=0
+  while(i<200){
+    print(i)
+    i <- i + 1
+    system(paste("/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --vcf ",goodfiles$V1[f]," --out tmp --window-pi ",goodfiles$V2[f]+i,sep=""))
+    tmpfile <- read.table(file="tmp.windowed.pi",header = T)
+    print(nrow(tmpfile))
+    if (nrow(tmpfile) == 1) {
+      system(paste("/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --vcf ",goodfiles$V1[f]," --out ",goodfiles$V1[f]," --window-pi ",goodfiles$V2[f]+i,sep=""))
+      break
+    }
+  }
+}
+```
+
+29. Split reference fasta file by gene
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 #cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $line >>genes.fasta; done
 /proj/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
 ```
 
-29. Rscript to count number of cytosines
+30. Rscript to count number of cytosines
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
 
@@ -754,7 +810,7 @@ write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,
 
 ```
 
-30. Get good intervals for Dm alpha
+31. Get good intervals for Dm alpha
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -774,7 +830,7 @@ merged <- merged[merged$prop > 0.05,]
 write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
 ```
 
-31. Theta and Tajima's D for methylation, first get alpha
+32. Theta and Tajima's D for methylation, first get alpha
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
@@ -785,7 +841,7 @@ cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 ```
 
-32. Get good intervals for Dm
+33. Get good intervals for Dm
 ```
 good_intervals <- read.table(file="good_intervals")
 alpha_dm <- read.table(file="alpha_Dm_rice")
@@ -796,7 +852,7 @@ good_intervals <- inner_join(good_intervals,alpha_dm,by="V1")
 write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, col.names = F)
 ```
 
-33. Now get Dm estimates
+34. Now get Dm estimates
 ```
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
 ```
