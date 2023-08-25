@@ -708,7 +708,7 @@ vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-miss
 
 ```
 
-27. Split methylation vcf by gene
+27. Split SNP vcf by gene
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna
  
@@ -842,8 +842,37 @@ cytsosine_count <- cytsosine_count[-c(1),]
 write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
 
 ```
+32. Split methylation vcf by gene intervals
+```
+#cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 
-32. Get good intervals for Dm alpha
+#cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar.recode.vcf.gz  $line >$line.var_invar.vcf; done
+#wc -l *vcf >vcflengths_var_invar
+
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data
+
+#vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar_indica1 --max-missing 0.5  --recode --bed  gene_pos.bed --keep  indica1
+#vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar_indica2 --max-missing 0.5  --recode --bed  gene_pos.bed --keep  indica2
+
+#bgzip rice_meth_var_invar_indica1.recode.vcf
+#tabix rice_meth_var_invar_indica1.recode.vcf.gz
+
+#bgzip rice_meth_var_invar_indica2.recode.vcf
+#tabix rice_meth_var_invar_indica2.recode.vcf.gz
+
+#mkdir genes_indica1
+cd genes_indica1
+#cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar_indica1.recode.vcf.gz  $line >$line.var_invar.vcf; done
+#wc -l *vcf >vcflengths_var_invar
+
+
+mkdir ../genes_indica2
+cd ../genes_indica2
+cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar_indica2.recode.vcf.gz  $line >$line.var_invar.vcf; done
+wc -l *vcf >vcflengths_var_invar
+```
+
+33. Get good intervals for Dm alpha
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -863,7 +892,7 @@ merged <- merged[merged$prop > 0.05,]
 write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
 ```
 
-33. Theta and Tajima's D for methylation, first get alpha
+34. Theta and Tajima's D for methylation, first get alpha
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
@@ -874,7 +903,7 @@ cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 ```
 
-34. Get good intervals for Dm
+35. Get good intervals for Dm
 ```
 good_intervals <- read.table(file="good_intervals")
 alpha_dm <- read.table(file="alpha_Dm_rice")
