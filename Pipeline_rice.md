@@ -221,7 +221,7 @@ d /proj/popgen/a.ramesh/projects/methylomes/rice/data
 cat samplenames2 |  while read -r value1 value2 remainder ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 10G --cytosine_report --genome_folder $value2 $value1.1.paired_bismark_hisat2_pe.deduplicated.bam ; done
 ```
 
-17. This R script is to genotype mC using a binomail test
+17. This R script is to genotype mC using a binomial test
 ```
 setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
 library(dplyr)
