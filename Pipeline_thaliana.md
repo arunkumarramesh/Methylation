@@ -183,3 +183,14 @@ cov_context2$position   <- as.numeric(gsub(".*_","",cov_context2$ID))
 write.table(cov_context2,file="cov_context3.txt",row.names = F)
 
 ```
+
+9. Split reference genome into genes
+```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/arabidopsis/genomes
+sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/arabidopsis/snps
+cat /data/proj2/popgen/a.ramesh/projects/methylomes/arabidopsis/genomes/gene_pos.list | while read -r line ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/arabidopsis/genomes/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa $line >>genes.fasta; done
+mkdir genes_fasta/
+/data/proj2/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+```
