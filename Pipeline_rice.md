@@ -783,6 +783,8 @@ for(f in 1:nrow(goodfiles)){
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 #cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $line >>genes.fasta; done
 /proj/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+cd genes_fasta/
+ls *fa >filenames
 ```
 
 30. Rscript to count number of cytosines
