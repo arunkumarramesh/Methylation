@@ -294,7 +294,7 @@ vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-al
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --geno-r2 --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed --ld-window-bp 100
 ```
 
-20. Split reference genome into genes
+18. Split reference genome into genes
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
 sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
@@ -302,4 +302,31 @@ cd /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/data_wgs
 cat /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.list | while read -r line ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna $line >>genes.fasta; done
 mkdir genes_fasta/
 /data/proj2/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+cd genes_fasta/
+ls *fa >filenames
+```
+
+19. Rscript to count number of cytosines
+
+```
+library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+
+## Only CG context
+files <- read.table(file="filenames")
+files <- as.character(files$V1)
+
+cytsosine_count <- ""
+for (f in 1:length(files)){
+  print(f)
+  cytosines <- c()
+  try(cytosines <- extractCytosinesFromFASTA(files[f], contexts = 'CG'),silent=T)
+  if (length(cytosines) > 0){
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],table(cytosines$context))))
+  } else {
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],0)))
+  }
+  #print(cytsosine_count)
+}
+cytsosine_count <- cytsosine_count[-c(1),]
+write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
 ```
