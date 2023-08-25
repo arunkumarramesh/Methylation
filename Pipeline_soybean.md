@@ -293,3 +293,13 @@ vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-al
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --geno-r2 --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed --ld-window-bp 100
 ```
+
+20. Split reference genome into genes
+```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
+sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/data_wgs
+cat /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.list | while read -r line ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/GCF_000004515.6_Glycine_max_v4.0_genomic.fna $line >>genes.fasta; done
+mkdir genes_fasta/
+/data/proj2/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+```
