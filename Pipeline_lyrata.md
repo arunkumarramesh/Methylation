@@ -353,4 +353,31 @@ cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna
 cat /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.list | while read -r line ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/Arabidopsis_lyrata.v.1.0.dna.toplevel_chrloroplast.fa $line >>genes.fasta; done
 mkdir genes_fasta/
 /data/proj2/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+cd genes_fasta/
+ls *fa >filenames
+```
+
+21. Rscript to count number of cytosines
+
+```
+library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+
+## Only CG context
+files <- read.table(file="filenames")
+files <- as.character(files$V1)
+
+cytsosine_count <- ""
+for (f in 1:length(files)){
+  print(f)
+  cytosines <- c()
+  try(cytosines <- extractCytosinesFromFASTA(files[f], contexts = 'CG'),silent=T)
+  if (length(cytosines) > 0){
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],table(cytosines$context))))
+  } else {
+    cytsosine_count <- rbind(cytsosine_count,(c(files[f],0)))
+  }
+  #print(cytsosine_count)
+}
+cytsosine_count <- cytsosine_count[-c(1),]
+write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
 ```
