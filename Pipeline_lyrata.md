@@ -342,3 +342,15 @@ vcftools --vcf lyrata_meth_all.vcf  --out lyrata_meth --min-alleles 2 --max-alle
 vcftools --vcf lyrata_meth_var_invar_all.vcf --out lyrata_meth_var_invar --recode --min-alleles 2 --max-alleles 2 --max-missing 0.5 --bed /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.bed
 
 ```
+
+20. Split reference genome into genes
+```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes
+sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
+
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/data_rna
+cat /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/gene_pos.list | while read -r line ; do samtools faidx /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes/Arabidopsis_lyrata.v.1.0.dna.toplevel_chrloroplast.fa $line >>genes.fasta; done
+mkdir genes_fasta/
+/data/proj2/popgen/a.ramesh/software/faSplit byname genes.fasta genes_fasta/
+```
