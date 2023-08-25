@@ -198,7 +198,6 @@ cat samplenames | while read line ; do mv $line.merged.fa.fai $line  ; done
 cat samplenames2 | while read line ; do /proj/popgen/a.ramesh/software/Bismark-0.24.0/bismark_genome_preparation --hisat2 --verbose --path_to_aligner /proj/popgen/a.ramesh/software/hisat2-2.2.1/ $line ; done
 
 ```
-
 14. Now map methylation reads with Bismark
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data
@@ -711,14 +710,35 @@ vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-miss
 
 27. Split methylation vcf by gene
 ```
-/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/
-mkdir genes_fasta
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna
+ 
+/proj/popgen/a.ramesh/software/htslib-1.16/bgzip -f rice.allsites.recode.vcf
+/proj/popgen/a.ramesh/software/htslib-1.16/tabix -f rice.allsites.recode.vcf.gz
 
-sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_fasta
+cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do /proj/popgen/a.ramesh/software/htslib-1.16/abix ../rice.allsites.recode.vcf.gz  $line >$line.var_invar.vcf; done
+wc -l *vcf >vcflengths_var_invar
+zcat ../rice.allsites.recode.vcf.gz | grep '##' >vcfheader
+for file in *.var_invar.vcf ; do cat vcfheader $file >${file/var_invar.vcf/all.vcf}; done
 
-cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 
-cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar.recode.vcf.gz  $line >$line.var_invar.vcf; done
+/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --gzvcf rice.allsites.recode.vcf.gz  --out rice_var_invar_indica2 --max-missing 0.5  --recode --bed  /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.bed --keep  indica2
+/proj/popgen/a.ramesh/software/vcftools-vcftools-581c231/bin/vcftools --gzvcf rice.allsites.recode.vcf.gz  --out rice_var_invar_indica1 --max-missing 0.5  --recode --bed  /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.bed --keep  indica1
+
+/proj/popgen/a.ramesh/software/htslib-1.16/bgzip -f rice_var_invar_indica1.recode.vcf
+/proj/popgen/a.ramesh/software/htslib-1.16/tabix -f rice_var_invar_indica1.recode.vcf.gz
+
+/proj/popgen/a.ramesh/software/htslib-1.16/bgzip -f rice_var_invar_indica2.recode.vcf
+/proj/popgen/a.ramesh/software/htslib-1.16/tabix -f rice_var_invar_indica2.recode.vcf.gz
+
+mkdir genes_indica1
+cd genes_indica1
+cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do /proj/popgen/a.ramesh/software/htslib-1.16/tabix ../rice_var_invar_indica1.recode.vcf.gz  $line >$line.var_invar.vcf; done
+wc -l *vcf >vcflengths_var_invar
+
+mkdir ../genes_indica2
+cd ../genes_indica2
+cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do /proj/popgen/a.ramesh/software/htslib-1.16/tabix ../rice_var_invar_indica2.recode.vcf.gz  $line >$line.var_invar.vcf; done
 wc -l *vcf >vcflengths_var_invar
 ```
 
@@ -777,8 +797,19 @@ for(f in 1:nrow(goodfiles)){
   }
 }
 ```
+29. Rub above R script for each group
+```
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_fasta
+Rscript vcfstats.R
 
-29. Split reference fasta file by gene
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_indica1
+Rscript vcfstats.R
+
+cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_indica2
+Rscript vcfstats.R
+```
+
+30. Split reference fasta file by gene
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 #cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $line >>genes.fasta; done
@@ -787,7 +818,7 @@ cd genes_fasta/
 ls *fa >filenames
 ```
 
-30. Rscript to count number of cytosines
+31. Rscript to count number of cytosines
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
 
@@ -812,7 +843,7 @@ write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,
 
 ```
 
-31. Get good intervals for Dm alpha
+32. Get good intervals for Dm alpha
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -832,7 +863,7 @@ merged <- merged[merged$prop > 0.05,]
 write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
 ```
 
-32. Theta and Tajima's D for methylation, first get alpha
+33. Theta and Tajima's D for methylation, first get alpha
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
@@ -843,7 +874,7 @@ cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 ```
 
-33. Get good intervals for Dm
+34. Get good intervals for Dm
 ```
 good_intervals <- read.table(file="good_intervals")
 alpha_dm <- read.table(file="alpha_Dm_rice")
@@ -854,7 +885,7 @@ good_intervals <- inner_join(good_intervals,alpha_dm,by="V1")
 write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, col.names = F)
 ```
 
-34. Now get Dm estimates
+35. Now get Dm estimates
 ```
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
 ```
