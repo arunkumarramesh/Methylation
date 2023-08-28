@@ -288,10 +288,19 @@ vcftools --gzvcf soybean_snps_filtered.recode.vcf.gz --out soybean_snp --min-all
 
 vcftools --gzvcf soybean_snps_filtered.recode.vcf.gz --out soybean_snp --min-alleles 2 --max-alleles 2 --max-missing 0.5 --recode --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 
+#vcftools --gzvcf soybean_snps_filtered.recode.vcf.gz --chr NC_016088.4 --chr NC_016089.4 --chr NC_016090.4 --chr NC_016091.4 --chr NC_038241.2 --chr NC_038242.2 --chr NC_038243.2 --chr NC_038244.2 --chr NC_038245.2 --chr NC_038246.2 --chr NC_038247.2 --chr NC_038248.2 --chr NC_038249.2 --chr NC_038250.2 --chr NC_038251.2 --chr NC_038252.2 --chr NC_038253.2 --chr NC_038254.2 --chr NC_038255.2 --chr NC_038256.2 --recode --out filtered_plink --max-missing 0.5
+#/data/proj2/popgen/a.ramesh/software/plink --vcf filtered_plink.recode.vcf --double-id  --allow-extra-chr --set-missing-var-ids @:# --maf 0.01  -r2 gz --ld-window 100 --ld-window-kb 1000 --ld-window-r2 0  --out soybean_ld --keep wild_plink
+#python2.7 /data/proj2/popgen/a.ramesh/software/ld_decay_calc.py  -i soybean_ld.ld.gz -o soybean_ld_mean
+
 cd /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/data/
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --freq --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --site-pi --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed
 vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-alleles 2 --max-missing 0.5 --geno-r2 --bed  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes/gene_pos.bed --ld-window-bp 100
+
+#vcftools --vcf soybean_meth_all.vcf --chr NC_016088.4 --chr NC_016089.4 --chr NC_016090.4 --chr NC_016091.4 --chr NC_038241.2 --chr NC_038242.2 --chr NC_038243.2 --chr NC_038244.2 --chr NC_038245.2 --chr NC_038246.2 --chr NC_038247.2 --chr NC_038248.2 --chr NC_038249.2 --chr NC_038250.2 --chr NC_038251.2 --chr NC_038252.2 --chr NC_038253.2 --chr NC_038254.2 --chr NC_038255.2 --chr NC_038256.2 --recode --out filtered_meth_plink --max-missing 0.5
+/data/proj2/popgen/a.ramesh/software/plink --vcf filtered_meth_plink.recode.vcf --double-id --mac 2 --max-mac 2 --allow-extra-chr  --maf 0.01 --out sortedfile --keep wild_plink --make-bed
+/data/proj2/popgen/a.ramesh/software/plink --bfile sortedfile --set-missing-var-ids @:#  -r2 gz --ld-window 100 --ld-window-kb 1000 --ld-window-r2 0 --out soybean_meth_ld --allow-extra-chr
+python2.7 /data/proj2/popgen/a.ramesh/software/ld_decay_calc.py -i soybean_meth_ld.ld.gz -o soybean_meth_ld_mean
 ```
 
 18. Split reference genome into genes
