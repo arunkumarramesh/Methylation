@@ -303,7 +303,33 @@ vcftools --vcf soybean_meth_all.vcf  --out soybean_meth --min-alleles 2 --max-al
 python2.7 /data/proj2/popgen/a.ramesh/software/ld_decay_calc.py -i soybean_meth_ld.ld.gz -o soybean_meth_ld_mean
 ```
 
-18. Split reference genome into genes
+18. LD decay plotting script 
+```
+## LD decay plotting script 
+
+library(tidyverse)
+
+## soybean
+my_bins_snps_soybean <- "soybean_ld_mean.ld_decay_bins"
+ld_bins_snps_soybean  <- read_tsv(my_bins_snps_soybean )
+my_bins_meth_soybean  <- "soybean_meth_ld_mean.ld_decay_bins"
+ld_bins_meth_soybean  <- read_tsv(my_bins_meth_soybean)
+ld_bins_snps_soybean$type <- "SNP"
+ld_bins_meth_soybean$type <- "SMP"
+ld_bins_all_soybean <- rbind(ld_bins_snps_soybean ,ld_bins_meth_soybean )
+ggplot(ld_bins_all_soybean, aes(x=distance, y=avg_R2,color=type)) + 
+  geom_point() +
+  geom_smooth(se = F) +
+  xlab("Distance (bp)") + ylab(expression(italic(r)^2)) +
+  xlim(c(0,1000000))
+ggplot(ld_bins_all_soybean, aes(x=distance, y=avg_R2,color=type)) + 
+  geom_point() +
+  geom_smooth(se = F) +
+  xlab("Distance (bp)") + ylab(expression(italic(r)^2)) +
+  xlim(c(0,50000))
+```
+
+19. Split reference genome into genes
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
 sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
@@ -315,7 +341,7 @@ cd genes_fasta/
 ls *fa >filenames
 ```
 
-19. Rscript to count number of cytosines
+20. Rscript to count number of cytosines
 
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
