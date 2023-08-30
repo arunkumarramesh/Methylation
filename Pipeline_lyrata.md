@@ -343,7 +343,105 @@ vcftools --vcf lyrata_meth_var_invar_all.vcf --out lyrata_meth_var_invar --recod
 
 ```
 
-20. Split reference genome into genes
+20. R plot for other metrics. Per site or across genome, not per gene.
+```
+#SFS
+
+lyrata_snp.frq <- read.table(file="lyrata_snp.frq",row.names = NULL)
+lyrata_snp.frq$raf <- as.numeric(gsub(".*:","",lyrata_snp.frq$N_CHR))
+lyrata_snp.frq$aaf <- as.numeric(gsub(".*:","",lyrata_snp.frq$X.ALLELE.FREQ.))
+lyrata_snp.frq$maf <- apply(lyrata_snp.frq[7:8],1,min)
+lyrata_snp.frq <- lyrata_snp.frq[lyrata_snp.frq$maf > 0,]
+lyrata_snp.frq <- lyrata_snp.frq[lyrata_snp.frq$maf < 1,]
+lyrata_snp.frq <- lyrata_snp.frq[lyrata_snp.frq$N_ALLELES > 37,]
+lyrata_snp.frq$type <- 'SNP'
+
+lyrata_meth.frq <- read.table(file="lyrata_meth.frq",row.names = NULL)
+lyrata_meth.frq$raf <- as.numeric(gsub(".*:","",lyrata_meth.frq$N_CHR))
+lyrata_meth.frq$aaf <- as.numeric(gsub(".*:","",lyrata_meth.frq$X.ALLELE.FREQ.))
+lyrata_meth.frq$maf <- apply(lyrata_meth.frq[7:8],1,min)
+lyrata_meth.frq <- lyrata_meth.frq[lyrata_meth.frq$maf > 0,]
+lyrata_meth.frq <- lyrata_meth.frq[lyrata_meth.frq$maf < 1,]
+lyrata_meth.frq <- lyrata_meth.frq[lyrata_meth.frq$N_ALLELES < 37,]
+lyrata_meth.frq$type <- 'SMP'
+
+snp_smp_lyrata <- rbind(lyrata_snp.frq,lyrata_meth.frq)
+
+lyrata_sfs <- ggplot(snp_smp_lyrata,aes(fill=type,x=maf)) +
+  geom_histogram(aes(y=0.05*..density..),binwidth=0.05, alpha=0.4, position='identity') +
+  ylab("Proportion of sites")
+
+nrow(lyrata_meth.frq)/nrow(lyrata_snp.frq)
+
+## PI
+lyrata_snp.sites.pi <- read.table(file="lyrata_snp.sites.pi",row.names = NULL, header = T)
+lyrata_snp.sites.pi$type <- 'SNP'
+
+lyrata_meth.sites.pi <- read.table(file="lyrata_meth.sites.pi",row.names = NULL, header = T)
+lyrata_meth.sites.pi$type <- 'SMP'
+
+snp_smp_lyrata <- rbind(lyrata_snp.sites.pi,lyrata_meth.sites.pi)
+
+df_lyrata_pi <- dplyr::count(snp_smp_lyrata, type)
+df_lyrata_pi$n <- paste("n=",df_lyrata_pi$n,sep="")
+lyrata_pi <- ggplot(snp_smp_lyrata,aes(x=type,y=PI)) +
+  geom_boxplot() +
+  ylab("Per site π") +
+  xlab("")+
+  ggtitle("A. lyrata")  +
+  geom_text(data = df_lyrata_pi, aes(y = 0.6, label = n))
+lyrata_pi
+
+nrow(lyrata_meth.sites.pi)/nrow(lyrata_snp.sites.pi)
+
+lyrata_prop_seg_smp <- 475/1346
+lyrata_prop_seg_snp <- 404842/(443781+443781)
+
+
+## LD
+lyrata_snp.geno.ld <- read.table(file="lyrata_snp.geno.ld",row.names = NULL, header = T)
+lyrata_snp.geno.ld$type <- 'SNP'
+
+lyrata_meth.geno.ld <- read.table(file="lyrata_meth.geno.ld",row.names = NULL, header = T)
+lyrata_meth.geno.ld$type <- 'SMP'
+
+snp_smp_lyrata <- rbind(lyrata_snp.geno.ld,lyrata_meth.geno.ld)
+
+lyrata_ld <- ggplot(snp_smp_lyrata,aes(x=type,y=R.2)) +
+  geom_boxplot() +
+  ylab("Pairwise LD (r2)") +
+  xlab("") +
+  ggtitle("A. lyrata")
+
+lyrata_ld <- ggplot(snp_smp_lyrata,aes(fill=type,x=R.2)) +
+  geom_histogram(aes(y=0.1*..density..),binwidth=0.1, alpha=0.3, position='identity') +
+  ylab("Proportion of sites") +
+  xlab("Pairwise LD (r2)") +
+  ggtitle("A. lyrata") +
+  scale_fill_manual(values=c("red","green"))
+
+nrow(lyrata_meth.geno.ld)/nrow(lyrata_snp.geno.ld)
+
+## tajima's D
+lyrata_snp.Tajima.D <- read.table(file="lyrata_snp.Tajima.D",row.names = NULL, header = T)
+lyrata_snp.Tajima.D$type <- 'SNP'
+
+lyrata_meth.Tajima.D <- read.table(file="lyrata_meth.Tajima.D",row.names = NULL, header = T)
+lyrata_meth.Tajima.D$type <- 'SMP'
+
+snp_smp_lyrata <- rbind(lyrata_snp.Tajima.D,lyrata_meth.Tajima.D)
+
+lyrata_tajd <- ggplot(snp_smp_lyrata,aes(x=type,y=TajimaD)) +
+  geom_boxplot()  +
+  ylab("Tajima's D") +
+  xlab("") +
+  ggtitle("A. lyrata")
+
+nrow(lyrata_meth.Tajima.D)/nrow(lyrata_snp.Tajima.D)
+
+```
+
+21. Split reference genome into genes
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/lyrata/genomes
 sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
@@ -357,7 +455,7 @@ cd genes_fasta/
 ls *fa >filenames
 ```
 
-21. Rscript to count number of cytosines
+22. Rscript to count number of cytosines
 
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
