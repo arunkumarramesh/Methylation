@@ -329,7 +329,93 @@ ggplot(ld_bins_all_soybean, aes(x=distance, y=avg_R2,color=type)) +
   xlim(c(0,50000))
 ```
 
-19. Split reference genome into genes
+19. R plots for other metrics
+```
+# SFS
+soybean_snp.frq <- read.table(file="soybean_snp.frq",row.names = NULL)
+soybean_snp.frq$raf <- as.numeric(gsub(".*:","",soybean_snp.frq$N_CHR))
+soybean_snp.frq$aaf <- as.numeric(gsub(".*:","",soybean_snp.frq$X.ALLELE.FREQ.))
+soybean_snp.frq$maf <- apply(soybean_snp.frq[7:8],1,min)
+soybean_snp.frq <- soybean_snp.frq[soybean_snp.frq$maf > 0,]
+soybean_snp.frq <- soybean_snp.frq[soybean_snp.frq$maf < 1,]
+soybean_snp.frq <- soybean_snp.frq[soybean_snp.frq$N_ALLELES > 87,]
+soybean_snp.frq$type <- 'SNP'
+
+soybean_meth.frq <- read.table(file="soybean_meth.frq",row.names = NULL)
+soybean_meth.frq$raf <- as.numeric(gsub(".*:","",soybean_meth.frq$N_CHR))
+soybean_meth.frq$aaf <- as.numeric(gsub(".*:","",soybean_meth.frq$X.ALLELE.FREQ.))
+soybean_meth.frq$maf <- apply(soybean_meth.frq[7:8],1,min)
+soybean_meth.frq <- soybean_meth.frq[soybean_meth.frq$maf > 0,]
+soybean_meth.frq <- soybean_meth.frq[soybean_meth.frq$maf < 1,]
+soybean_meth.frq <- soybean_meth.frq[soybean_meth.frq$N_ALLELES > 81,]
+soybean_meth.frq$type <- 'SMP'
+
+snp_smp_soybean <- rbind(soybean_snp.frq,soybean_meth.frq)
+
+soybean_sfs <- ggplot(snp_smp_soybean,aes(fill=type,x=maf)) +
+  geom_histogram(aes(y=0.05*..density..),binwidth=0.05, alpha=0.4, position='identity') +
+  ylab("Proportion of sites")
+
+nrow(soybean_meth.frq)/nrow(soybean_snp.frq)
+
+## pi
+soybean_snp.sites.pi <- read.table(file="soybean_snp.sites.pi",row.names = NULL, header = T)
+soybean_invar.sites.pi <- read.table(file="soybean_invar.sites.pi",row.names = NULL, header = T)
+soybean_snp.sites.pi <- rbind(soybean_snp.sites.pi,soybean_invar.sites.pi)
+soybean_snp.sites.pi$type <- 'SNP'
+
+soybean_meth.sites.pi <- read.table(file="soybean_meth.sites.pi",row.names = NULL, header = T)
+soybean_meth.sites.pi$type <- 'SMP'
+
+snp_smp_soybean <- rbind(soybean_snp.sites.pi,soybean_meth.sites.pi)
+
+df_soybean_pi <- dplyr::count(snp_smp_soybean, type)
+df_soybean_pi$n <- paste("n=",df_soybean_pi$n,sep="")
+
+soybean_pi <- ggplot(snp_smp_soybean,aes(x=type,y=PI)) +
+  geom_boxplot() +
+  ylab("Per site π") +
+  xlab("")+
+  ggtitle("Soybean")+
+  geom_text(data = df_soybean_pi, aes(y = 0.6, label = n))
+
+soybean_pi
+mean(soybean_snp.sites.pi$PI,na.rm=T)
+median(soybean_snp.sites.pi$PI,na.rm=T)
+
+nrow(soybean_meth.sites.pi)/nrow(soybean_snp.sites.pi)
+
+soybean_prop_seg_smp <- 54832/(54832+167691)
+soybean_prop_seg_snp <- 214773/(214773+221498)
+
+## LD
+soybean_snp.geno.ld <- read.table(file="soybean_snp.geno.ld",row.names = NULL, header = T)
+soybean_snp.geno.ld$type <- 'SNP'
+
+soybean_meth.geno.ld <- read.table(file="soybean_meth.geno.ld",row.names = NULL, header = T)
+soybean_meth.geno.ld$type <- 'SMP'
+
+snp_smp_soybean <- rbind(soybean_snp.geno.ld,soybean_meth.geno.ld)
+
+soybean_ld <- ggplot(snp_smp_soybean,aes(x=type,y=R.2)) +
+  geom_violin() +
+  ylab("Pairwise LD (r2)") +
+  xlab("") +
+  ggtitle("Soybean")
+
+soybean_ld <- ggplot(snp_smp_soybean,aes(fill=type,x=R.2)) +
+  geom_histogram(aes(y=0.1*..density..),binwidth=0.1, alpha=0.3, position='identity') +
+  ylab("Proportion of sites") +
+  xlab("Pairwise LD (r2)") +
+  ggtitle("Soybean") +
+  scale_fill_manual(values=c("red","green"))
+
+nrow(soybean_meth.geno.ld)/nrow(soybean_snp.geno.ld)
+
+
+```
+
+20. Split reference genome into genes
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/soybean/genomes
 sed -e 's/\t/:/' -e  's/\t/-/' gene_pos.bed >gene_pos.list
@@ -341,7 +427,7 @@ cd genes_fasta/
 ls *fa >filenames
 ```
 
-20. Rscript to count number of cytosines
+21. Rscript to count number of cytosines
 
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
