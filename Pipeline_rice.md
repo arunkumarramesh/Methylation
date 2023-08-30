@@ -742,7 +742,7 @@ cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while
 wc -l *vcf >vcflengths_var_invar
 ```
 
-28. Get per gene theta and tajima's D for SNPs
+28. Get per gene theta and tajima's D for SNPs. some parts differ for each group
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -765,6 +765,11 @@ vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$numvar > 10,]
 vcflengths_var_invar <- vcflengths_var_invar[vcflengths_var_invar$prop > 0.05,]
 
 write.table(cbind(paste(vcflengths_var_invar$interval,".all.vcf",sep=""),vcflengths_var_invar$length),file="goodfiles",sep="\t",quote=F,row.names = F, col.names = F)
+
+## run these in linux before continuing. this part differs for each group (e.g. indica 1, indica 2)
+#./bad_intervals.sh
+# zcat ../rice_var_invar_indica1.recode.vcf.gz | grep '#' >vcfheader
+# for file in *.var_invar.vcf ; do cat vcfheader $file > ${file/.var_invar.vcf/.all.vcf} ; done
 
 goodfiles <- read.table(file="goodfiles")
 for(f in 1:nrow(goodfiles)){
