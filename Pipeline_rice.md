@@ -923,13 +923,27 @@ perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output
 
 35. Get good intervals for Dm
 ```
-good_intervals <- read.table(file="good_intervals")
-alpha_dm <- read.table(file="alpha_Dm_rice")
-alpha_dm$V1 <- gsub(".input.txt","",alpha_dm$V1)
-alpha_dm <- alpha_dm[1:2]
-good_intervals <- inner_join(good_intervals,alpha_dm,by="V1")
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
+for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 
-write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, col.names = F)
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica1
+#for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+cp /data/proj2/popgen/a.ramesh/software/diff_two_seq.pl .
+mkdir input
+mv *.input.txt input/
+perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica2
+for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+cp /data/proj2/popgen/a.ramesh/software/diff_two_seq.pl .
+mkdir input
+mv *.input.txt input/
+perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+
 ```
 
 35. Now get Dm estimates
