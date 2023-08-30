@@ -708,7 +708,105 @@ vcftools --vcf rice_meth_var_invar_all.vcf  --out rice_meth_var_invar --max-miss
 
 ```
 
-27. Split SNP vcf by gene
+27. R plots for other metrics. Per site or across genome, not per gene.
+```
+#SFS 
+rice_snp.frq <- read.table(file="rice_snp.frq",row.names = NULL)
+rice_snp.frq$raf <- as.numeric(gsub(".*:","",rice_snp.frq$N_CHR))
+rice_snp.frq$aaf <- as.numeric(gsub(".*:","",rice_snp.frq$X.ALLELE.FREQ.))
+rice_snp.frq$maf <- apply(rice_snp.frq[7:8],1,min)
+rice_snp.frq <- rice_snp.frq[rice_snp.frq$maf > 0,]
+rice_snp.frq <- rice_snp.frq[rice_snp.frq$maf < 1,]
+rice_snp.frq <- rice_snp.frq[rice_snp.frq$N_ALLELES > 39,]
+rice_snp.frq$type <- 'SNP'
+
+rice_meth.frq <- read.table(file="rice_meth.frq",row.names = NULL)
+rice_meth.frq$raf <- as.numeric(gsub(".*:","",rice_meth.frq$N_CHR))
+rice_meth.frq$aaf <- as.numeric(gsub(".*:","",rice_meth.frq$X.ALLELE.FREQ.))
+rice_meth.frq$maf <- apply(rice_meth.frq[7:8],1,min)
+rice_meth.frq <- rice_meth.frq[rice_meth.frq$maf > 0,]
+rice_meth.frq <- rice_meth.frq[rice_meth.frq$maf < 1,]
+rice_meth.frq <- rice_meth.frq[rice_meth.frq$N_ALLELES > 39,]
+rice_meth.frq$type <- 'SMP'
+
+snp_smp_rice <- rbind(rice_snp.frq,rice_meth.frq)
+
+rice_sfs <- ggplot(snp_smp_rice,aes(fill=type,x=maf)) +
+  geom_histogram(aes(y=0.05*..density..),binwidth=0.05, alpha=0.4, position='identity') +
+  ylab("Proportion of sites")
+
+nrow(rice_meth.frq)/nrow(rice_snp.frq)
+
+## PI
+rice_snp.sites.pi <- read.table(file="rice_snp.sites.pi",row.names = NULL, header = T)
+rice_snp.sites.pi$type <- 'SNP'
+
+rice_meth.sites.pi <- read.table(file="rice_meth.sites.pi",row.names = NULL, header = T)
+rice_meth.sites.pi$type <- 'SMP'
+
+snp_smp_rice <- rbind(rice_snp.sites.pi,rice_meth.sites.pi)
+
+df_rice_pi <- dplyr::count(snp_smp_rice, type)
+df_rice_pi$n <- paste("n=",df_rice_pi$n,sep="")
+
+rice_pi <- ggplot(snp_smp_rice,aes(x=type,y=PI)) +
+  geom_boxplot() +
+  ylab("Per site π") +
+  xlab("")+
+  ggtitle("O. sativa")+
+  geom_text(data = df_rice_pi, aes(y = 0.6, label = n))
+
+nrow(rice_meth.sites.pi)/nrow(rice_snp.sites.pi)
+
+rice_prop_seg_smp <- 5853/86378
+rice_prop_seg_snp <- 171399/845585
+
+## LD
+
+rice_snp.geno.ld <- read.table(file="rice_snp.geno.ld",row.names = NULL, header = T)
+rice_snp.geno.ld$type <- 'SNP'
+
+rice_meth.geno.ld <- read.table(file="rice_meth.geno.ld",row.names = NULL, header = T)
+rice_meth.geno.ld$type <- 'SMP'
+
+snp_smp_rice <- rbind(rice_snp.geno.ld,rice_meth.geno.ld)
+
+rice_ld <- ggplot(snp_smp_rice,aes(x=type,y=R.2)) +
+  geom_violin() +
+  ylab("Pairwise LD (r2)") +
+  xlab("") +
+  ggtitle("O. sativa")
+
+rice_ld <- ggplot(snp_smp_rice,aes(fill=type,x=R.2)) +
+  geom_histogram(aes(y=0.1*..density..),binwidth=0.1, alpha=0.3, position='identity') +
+  ylab("Proportion of sites") +
+  xlab("Pairwise LD (r2)") +
+  ggtitle("O. sativa") +
+  scale_fill_manual(values=c("red","green"))
+
+nrow(rice_meth.geno.ld)/nrow(rice_snp.geno.ld)
+
+## Tajima's D
+
+rice_snp.Tajima.D <- read.table(file="rice_snp.Tajima.D",row.names = NULL, header = T)
+rice_snp.Tajima.D$type <- 'SNP'
+
+rice_meth.Tajima.D <- read.table(file="rice_meth.Tajima.D",row.names = NULL, header = T)
+rice_meth.Tajima.D$type <- 'SMP'
+
+snp_smp_rice <- rbind(rice_snp.Tajima.D,rice_meth.Tajima.D)
+
+rice_env_tajd <- ggplot(snp_smp_rice,aes(x=type,y=TajimaD)) +
+  geom_boxplot()  +
+  ylab("Tajima's D") +
+  xlab("") +
+  ggtitle("O. sativa")
+
+nrow(rice_meth.Tajima.D)/nrow(rice_snp.Tajima.D)
+
+```
+
+28. Split SNP vcf by gene
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna
  
@@ -742,7 +840,7 @@ cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while
 wc -l *vcf >vcflengths_var_invar
 ```
 
-28. Get per gene theta and tajima's D for SNPs. some parts differ for each group
+29. Get per gene theta and tajima's D for SNPs. some parts differ for each group
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -802,7 +900,7 @@ for(f in 1:nrow(goodfiles)){
   }
 }
 ```
-29. Run above R script for each group
+30. Run above R script for each group
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_fasta
 Rscript vcfstats.R
@@ -814,7 +912,7 @@ cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_indica2
 Rscript vcfstats.R
 ```
 
-30. Split reference fasta file by gene
+31. Split reference fasta file by gene
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 #cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do samtools faidx /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa $line >>genes.fasta; done
@@ -823,7 +921,7 @@ cd genes_fasta/
 ls *fa >filenames
 ```
 
-31. Rscript to count number of cytosines
+32. Rscript to count number of cytosines
 ```
 library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
 
@@ -847,7 +945,7 @@ cytsosine_count <- cytsosine_count[-c(1),]
 write.table(cytsosine_count,file="cytsosine_count.txt",row.names=F, col.names=F,quote=F,sep="\t")
 
 ```
-32. Split methylation vcf by gene intervals
+33. Split methylation vcf by gene intervals
 ```
 #cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 
@@ -877,7 +975,7 @@ cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar_indi
 wc -l *vcf >vcflengths_var_invar
 ```
 
-33. Get good intervals for Dm alpha. file saved as good_intervals.R in each genes folder.
+34. Get good intervals for Dm alpha. file saved as good_intervals.R in each genes folder.
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
@@ -897,7 +995,7 @@ merged <- merged[merged$prop > 0.05,]
 write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F)
 ```
 
-34. Theta and Tajima's D for methylation, first get alpha
+35. Theta and Tajima's D for methylation, first get alpha
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
@@ -921,7 +1019,7 @@ perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output
 
 ```
 
-35. Get good intervals for Dm
+36. Get good intervals for Dm
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
@@ -946,7 +1044,7 @@ perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output
 
 ```
 
-35. Now get Dm estimates
+37. Now get Dm estimates
 ```
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
 ```
