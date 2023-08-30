@@ -904,12 +904,12 @@ cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 #cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 #perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 
-/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica1
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica1
 for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
 cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 
-/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica2
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica2
 for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
 cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
