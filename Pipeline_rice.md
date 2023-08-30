@@ -1043,8 +1043,73 @@ mv *.input.txt input/
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
 
 ```
-
 37. Now get Dm estimates
 ```
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
+```
+38. compare per gene theta and tajima's D estimates
+```
+library(dplyr)
+library(ggplot2)
+library(Cairo)
+rice.Dm_rice.txt <- read.table(file="rice.Dm_rice.txt",header= T)
+rice.Dm_rice.txt <- rice.Dm_rice.txt[!rice.Dm_rice.txt$chr %in% "chr",]
+rice.Dm_rice.txt[2:ncol(rice.Dm_rice.txt)] <- apply(rice.Dm_rice.txt[2:ncol(rice.Dm_rice.txt)],2,as.numeric)
+interval <- read.table(file="Dm_filenames")
+interval <- gsub(".Dm_rice.txt","",interval$V1)
+interval <- interval[-c(length(interval))]
+rice.Dm_rice.txt$interval <- interval
+rice.Dm_rice_tojoin <- rice.Dm_rice.txt[c(6,7,4)]
+colnames(rice.Dm_rice_tojoin) <- c("theta_pi","theta_s","tajimasD")
+rice.Dm_rice_tojoin$type <- " SMP"
+
+rice.windowed.pi <- read.table(file="rice.windowed.pi",header= T)
+rice.windowed.pi <- rice.windowed.pi[!rice.windowed.pi$BIN_START %in% "BIN_START",]
+rice.windowed.pi[2:ncol(rice.windowed.pi)] <- apply(rice.windowed.pi[2:ncol(rice.windowed.pi)],2,as.numeric)
+rice.windowed.pi$interval <- gsub(".all.vcf.*","",rice.windowed.pi$X10.12983013.12983507.all.vcf.windowed.pi.CHROM)
+rice.windowed.pi$CHROM <- gsub(".*:","",rice.windowed.pi$X10.12983013.12983507.all.vcf.windowed.pi.CHROM)
+rice.windowed.pi <- rice.windowed.pi[-c(1)]
+
+rice.Tajima.D <- read.table(file="rice.Tajima.D",header= T)
+rice.Tajima.D <- rice.Tajima.D[!rice.Tajima.D$N_SNPS %in% "N_SNPS",]
+rice.Tajima.D[2:ncol(rice.Tajima.D)] <- apply(rice.Tajima.D[2:ncol(rice.Tajima.D)],2,as.numeric)
+rice.Tajima.D$interval <- gsub(".all.vcf.*","",rice.Tajima.D$X10.12983013.12983507.all.vcf.Tajima.D.CHROM)
+rice.Tajima.D$CHROM <- gsub(".*:","",rice.Tajima.D$X10.12983013.12983507.all.vcf.Tajima.D.CHROM)
+rice.Tajima.D <- rice.Tajima.D[-c(1)]
+
+snp_metrics <- inner_join(rice.windowed.pi,rice.Tajima.D,by="interval")
+snp_metrics <- snp_metrics[c(3,4,5,8,9)]
+snp_metrics$chrom <- gsub(":.*","",snp_metrics$interval)
+snp_metrics$length <- as.numeric(gsub(".*-","", gsub(".*:","",snp_metrics$interval))) - as.numeric(gsub("-.*","", gsub(".*:","",snp_metrics$interval)))
+
+harmonicNumber = 0
+numChromosomes = 40
+for (i in 1:(numChromosomes - 1)) {
+  harmonicNumber = harmonicNumber + 1.0/i
+}
+print(harmonicNumber)
+snp_metrics$watterson <- (snp_metrics$N_VARIANTS/harmonicNumber)/snp_metrics$length
+plot(snp_metrics$PI,snp_metrics$watterson)
+abline(0,1)
+plot((snp_metrics$PI/snp_metrics$watterson),snp_metrics$TajimaD)
+abline(0,1)
+
+snp_metrics_tojoin <- snp_metrics[c(2,8,5)]
+colnames(snp_metrics_tojoin) <- c("theta_pi","theta_s","tajimasD")
+snp_metrics_tojoin$type <- " SNP"
+
+rice.Dm_rice_tojoin$type <- "mC"
+concatenated <- rbind(snp_metrics_tojoin,rice.Dm_rice_tojoin)
+cairo_pdf("theta_pi_rice.pdf",height=2.5,width=2)
+ggplot(concatenated,aes(x=type,y=theta_pi)) +
+  geom_boxplot() +
+  ylab("Nucleotide diversity (π)") +
+  xlab("")
+dev.off()
+ggplot(concatenated,aes(x=type,y=theta_s)) +
+  geom_boxplot()
+ggplot(concatenated,aes(x=type,y=tajimasD)) +
+  geom_boxplot()
+
+#snp_smp_metrics <- inner_join(rice.Dm_rice.txt,snp_metrics,by="interval")
 ```
