@@ -1032,7 +1032,22 @@ write.table(merged,file="good_intervals_alpha",sep="\t",quote=F,row.names = F, c
 ```
 37. Now get Dm estimates
 ```
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
+#cp good_intervals_alpha input/
+cd input/
+#cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_rice.txt -length $value2 -alpha $value5  ; done
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica1
+#cp good_intervals_alpha input/
+cd input/
+cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_indica1.txt -length $value2 -alpha $value5  ; done
+
+cd /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica2
+cp good_intervals_alpha input/
+cd input/
+cat good_intervals_alpha |  while read -r value1 value2 value3 value4 value5 remainder ;  do perl /data/proj2/popgen/a.ramesh/software/Dm_test_new.pl -input $value1.input.txt -output $value1.Dm_indica2.txt -length $value2 -alpha $value5  ; done
+
 ```
 38. compare per gene theta and tajima's D estimates
 ```
