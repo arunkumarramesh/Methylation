@@ -329,7 +329,7 @@ ggplot(ld_bins_all_soybean, aes(x=distance, y=avg_R2,color=type)) +
   xlim(c(0,50000))
 ```
 
-19. R plots for other metrics
+19. R plots for other metrics. Per site or across genome, not per gene.
 ```
 # SFS
 soybean_snp.frq <- read.table(file="soybean_snp.frq",row.names = NULL)
