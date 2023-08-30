@@ -872,13 +872,13 @@ cat ../gene_pos.list | while read -r line ; do tabix ../rice_meth_var_invar_indi
 wc -l *vcf >vcflengths_var_invar
 ```
 
-33. Get good intervals for Dm alpha
+33. Get good intervals for Dm alpha. file saved as good_intervals.R in each genes folder.
 ```
 vcflengths_var_invar <- read.table(file="vcflengths_var_invar")
 vcflengths_var_invar <- vcflengths_var_invar[-c(nrow(vcflengths_var_invar)),]
 vcflengths_var_invar$V2 <- gsub(".var_invar.vcf","",vcflengths_var_invar$V2)
 colnames(vcflengths_var_invar) <- c("numvar","interval")
-cytsosine_count <- read.table(file="cytsosine_count.txt")
+cytsosine_count <- read.table(file="../cytsosine_count.txt")
 cytsosine_count$V1 <- gsub(".fa","",cytsosine_count$V1)
 colnames(cytsosine_count) <- c("interval","numc")
 
@@ -896,11 +896,24 @@ write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.nam
 ```
 cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
 ## Dm header looks like this: #chr    position        C019    C051    C135    C139    C148    C151    MH63    NIP     W081    W105    W125    W128    W161    W169    W257    W261    W286    W294    W306    ZS97
+## Dm header for indica1: #chr    position        C019    C135    C139    C151    ZS97
+## Dm header for indica2: #chr    position        C148    MH63    W161    W169
 
+cd  /data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_fasta
+#for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+#cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+#perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+
+/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica1
 for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
-
 cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
 perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+
+/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/genes_indica2
+for file in *.var_invar.vcf; do sed '/##/d' $file | cut -f 1,2,10- | sed 's/\/.//g' | cat Dm_header -  >${file/.var_invar.vcf/.input.txt} ; done 
+cut -f 1-2 good_intervals | sed 's/\t/.input.txt\t/' >length_list
+perl /data/proj2/popgen/a.ramesh/software/alpha_estimation.pl -dir input -output  alpha_Dm_rice -length_list length_list
+
 ```
 
 35. Get good intervals for Dm
