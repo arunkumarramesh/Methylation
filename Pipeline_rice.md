@@ -797,7 +797,7 @@ for(f in 1:nrow(goodfiles)){
   }
 }
 ```
-29. Rub above R script for each group
+29. Run above R script for each group
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_fasta
 Rscript vcfstats.R
@@ -889,7 +889,7 @@ merged$prop <- merged$numvar/merged$numc
 merged <- merged[merged$numvar > 10,]
 merged <- merged[merged$prop > 0.05,]
 
-write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F
+write.table(merged,file="good_intervals",sep="\t",quote=F,row.names = F, col.names = F)
 ```
 
 34. Theta and Tajima's D for methylation, first get alpha
