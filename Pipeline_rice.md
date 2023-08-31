@@ -81,13 +81,17 @@ for file in *_marked.bam ; do java -jar /proj/popgen/a.ramesh/software/picard.ja
 
 ```
 
-6. SplitNCigarReads
+6. SplitNCigarReads and change read groups to represent accessions.
 ```
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/
 for file in *_marked.bam ; do /proj/popgen/a.ramesh/software/gatk-4.3.0.0/gatk SplitNCigarReads -R /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa  -I $file -O  ${file/_marked.bam/_split.bam}  ; done
 for file in *_split.bam ; do picard BuildBamIndex -I $file; done
-ls *_split.bam > lc_files
-ls *_split.bam | sed 's/*_split.bam//' | paste - lc_files >lc_files2 ## for haplotyper caller script (file also called hc_files2)
+
+for file in *_split.bam ; do java -jar /proj/popgen/a.ramesh/software/picard.jar AddOrReplaceReadGroups -I $file -O ${file/_split.bam/_readgroup.bam} -LB species -PL illumina -PU 1 -SM $file; done
+for file in *_readgroup.bam ; do java -jar /proj/popgen/a.ramesh/software/picard.jar BuildBamIndex -I $file; done
+
+ls *_readgroup.bam > lc_files
+ls *_readgroup.bam | sed 's/*_readgroup.bam//' | paste - lc_files >lc_files2 ## for haplotyper caller script (file also called hc_files2)
 ```
 
 7. Run haplotype caller using perl script to parallelize
