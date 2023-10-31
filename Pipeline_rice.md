@@ -1119,3 +1119,84 @@ ggplot(concatenated,aes(x=type,y=tajimasD)) +
 
 #snp_smp_metrics <- inner_join(rice.Dm_rice.txt,snp_metrics,by="interval")
 ```
+
+39. Process reference genome file and bismark methylation call files for DMR calling
+```
+cut -f 1-2 Oryza_sativa.IRGSP-1.0.dna.toplevel.fa.fai >rice_chr
+
+sed 's/C019//' C019.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C019_context.txt
+sed 's/C051//' C051.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C051_context.txt
+sed 's/C135//' C135.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C135_context.txt
+sed 's/C139//' C139.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C139_context.txt
+sed 's/C148//' C148.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C148_context.txt
+sed 's/C151//' C151.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >C151_context.txt
+sed 's/MH63//' MH63.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >MH63_context.txt
+sed 's/NIP//' NIP.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >NIP_context.txt
+sed 's/W081//' W081.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W081_context.txt
+sed 's/W105//' W105.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W105_context.txt
+sed 's/W125//' W125.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W125_context.txt
+sed 's/W128//' W128.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W128_context.txt
+sed 's/W161//' W161.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W161_context.txt
+sed 's/W169//' W169.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W169_context.txt
+sed 's/W257//' W257.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W257_context.txt
+sed 's/W261//' W261.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W261_context.txt
+sed 's/W286//' W286.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W286_context.txt
+sed 's/W294//' W294.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W294_context.txt
+sed 's/W306//' W306.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >W306_context.txt
+sed 's/ZS97//' ZS97.1.paired_bismark_hisat2_pe.deduplicated.CpG_report.txt >ZS97_context.txt
+
+for file in *context.txt; do sed -i -e '/Syn/d' -e '/AP/d' -e '/AC/d' -e '/Mt/d' -e '/Pt/d' $file; done
+
+sed 's/ .*//' Oryza_sativa.IRGSP-1.0.dna.toplevel.fa >newref.fa
+samtools faidx newref.fa
+samtools faidx newref.fa 1 >newref_1.fa
+samtools faidx newref.fa 2 >newref_2.fa
+samtools faidx newref.fa 3 >newref_3.fa
+samtools faidx newref.fa 4 >newref_4.fa
+samtools faidx newref.fa 5 >newref_5.fa
+samtools faidx newref.fa 6 >newref_6.fa
+samtools faidx newref.fa 7 >newref_7.fa
+samtools faidx newref.fa 8 >newref_8.fa
+samtools faidx newref.fa 9 >newref_9.fa
+samtools faidx newref.fa 10 >newref_10.fa
+samtools faidx newref.fa 11 >newref_11.fa
+samtools faidx newref.fa 12 >newref_12.fa
+cat newref_*.fa > newref_all.fa
+```
+
+40. Do DMR calling
+```
+library("methimpute",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+library("jDMR",lib.loc="/data/home/users/a.ramesh/R/x86_64-redhat-linux-gnu-library/4.1/")
+setwd("/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data")
+
+rice_chr <- read.table(file="rice_chr")
+colnames(rice_chr) <- c("chromosome","length")
+cytosine.positions <- extractCytosinesFromFASTA("Oryza_sativa.IRGSP-1.0.dna.toplevel.fa",contexts = c('CG','CHG','CHH'))
+cytosine.positions@seqnames <- gsub(" .*","",cytosine.positions@seqnames)
+cytosine.positions@seqinfo@seqnames <- gsub(" .*","",cytosine.positions@seqinfo@seqnames)
+contextfiles <- read.table(file="contextfiles3")
+
+#contextfiles3 looks like this, tab seperated
+#W294_context.txt
+#W306_context.txt
+#ZS97_context.txt
+
+for (i in 1:nrow(contextfiles)){
+  bismark.data <- importBismark(file=as.character(contextfiles[i,]), chrom.lengths=rice_chr)
+  methylome <- inflateMethylome(bismark.data, cytosine.positions)
+  distcor <- distanceCorrelation(methylome, separate.contexts = TRUE)
+  fit <- estimateTransDist(distcor)
+  model <- callMethylationSeparate(data = methylome, transDist = fit$transDist,verbosity = 0)
+  exportMethylome(model, filename = paste(c(gsub("_context.txt","", contextfiles[i,])), "_methimpute",sep=""))
+}
+
+out.dir <- "/data/proj2/popgen/a.ramesh/projects/methylomes/rice/data/jdmr"
+
+#filenames looks like this, tab seperated
+#file    sample
+#C019_methimpute C019
+#C051_methimpute C051
+
+runjDMRgrid(out.dir=out.dir,fasta.file="newref_all.fa",samplefiles="filenames",genome="rice",contexts = c("CG"),min.C = 10)
+```
