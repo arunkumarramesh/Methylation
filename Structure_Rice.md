@@ -318,7 +318,7 @@ pophelper.com
     n.rep = 30, xval.plot = TRUE)
 
 ### 4. DAPC plot and customize
-	dapc2 <- dapc(meth,n.pca=1)
+	dapc2 <- dapc(meth,n.pca=3,n.da=3)
 	scatter(dapc2, ratio.pca=0.3, bg="white", pch=20, cell=0,
     cstar=0, col=myCols, solid=.4, cex=5, clab=0,
     mstree=TRUE, scree.da=FALSE, posi.leg ="topleft",
