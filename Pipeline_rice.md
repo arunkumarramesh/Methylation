@@ -818,7 +818,7 @@ cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna
 /proj/popgen/a.ramesh/software/htslib-1.16/tabix -f rice.allsites.recode.vcf.gz
 
 cd /proj/popgen/a.ramesh/projects/methylomes/rice/data_rna/genes_fasta
-cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do /proj/popgen/a.ramesh/software/htslib-1.16/abix ../rice.allsites.recode.vcf.gz  $line >$line.var_invar.vcf; done
+cat /proj/popgen/a.ramesh/projects/methylomes/rice/genomes/gene_pos.list | while read -r line ; do /proj/popgen/a.ramesh/software/htslib-1.16/tabix ../rice.allsites.recode.vcf.gz  $line >$line.var_invar.vcf; done
 wc -l *vcf >vcflengths_var_invar
 zcat ../rice.allsites.recode.vcf.gz | grep '##' >vcfheader
 for file in *.var_invar.vcf ; do cat vcfheader $file >${file/var_invar.vcf/all.vcf}; done
