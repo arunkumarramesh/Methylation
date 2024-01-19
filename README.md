@@ -1,8 +1,6 @@
-## Name
-Pipelines to identify polymorphic genetic and methyalation variants
+## Pipelines to identify polymorphic genetic and methyalation variants
 
-## Description
-Scripts to process and analyse genome and bisulfite data from Arabidopsis, rice, maize, and soybean. Goals are to identify polymorphic nucleotide and methylation sites for each species and perform evolutionary analyses. General pipeline is describe below.
+Pipeline to process and analyse genome and bisulfite data from Arabidopsis, rice, maize, and soybean. Goals are to identify polymorphic nucleotide and methylation sites for each species and perform evolutionary analyses. General pipeline is describe below.
 
 
 
