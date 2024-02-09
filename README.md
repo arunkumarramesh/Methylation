@@ -17,6 +17,14 @@ Calculation_rice.md: Pipeline to for population structure analyses in rice
 
 Calculation_rice.md: Pipeline to for population genetic analyses in rice
 
+rna_seq_variant_calling.nf: Nextflow pipeline to call variants from RNA seq data. To use, run
+- nextflow rna_seq_variant_calling.nf --reads SAMPLE*_{1,2}.fastq.gz --genome GENOME.fa --gtf GENOME.gtf --cpu 8
+- reads: paired read files with full path
+- genome: genome (not transcriptome!) reference fasta file  with full path
+- gtf: gtf file containing genome annotations for reference fasta file  with full path
+- cpu: number of threads
+
+
 
 ## Overview of pipeline
 
