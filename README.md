@@ -21,10 +21,11 @@ Perl_scripts_for_GATK: Perl scripts for calling variants from aligned BAM files 
 - Needed as GATK haplotype caller does not have a multithreading option
 
 rna_seq_variant_calling.nf: Nextflow pipeline to call variants from RNA seq data. To use, run
-- nextflow rna_seq_variant_calling.nf --reads SAMPLE*_{1,2}.fastq.gz --genome GENOME.fa --gtf GENOME.gtf --cpu 8
+- nextflow rna_seq_variant_calling.nf --reads SAMPLE*_{1,2}.fastq.gz --genome GENOME.fa --gtf GENOME.gtf --dictname GENOME_FILENAME --cpu 8
 - reads: paired read files with full path
 - genome: genome (not transcriptome!) reference fasta file  with full path
 - gtf: gtf file containing genome annotations for reference fasta file  with full path
+- dictname: required for picard create seq dictionary. Filename for genome but without the extension (i.e. just GENOME).
 - cpu: number of threads
 
 
